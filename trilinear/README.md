@@ -4,12 +4,12 @@
 
 By default, we use pytorch 1.x:
 
-    cd trilinear/cpp/torch_1_x
-    sh setup.sh
+    cd trilinear/cpp
+    sh setup.torch1.x.sh
     
 For pytorch 0.4.1:
 
-    cd trilinear/cpp/torch_0_4_1
+    cd trilinear/cpp
     sh make.sh
 
 ### Use cpp trilinear 

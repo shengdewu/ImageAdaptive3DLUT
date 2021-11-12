@@ -3,14 +3,7 @@ FROM dl.nvidia/cuda:10.1-cudnn7-devel
 
 
 COPY ./ImageAdaptive3DLUT /code/LUT
-RUN cd /code/LUT/trilinear/cpp/torch_1_x && python3 setup.py build develop
-
-cd trilinear/cpp/torch_1_x
-sh setup.sh
-
-COPY ./AdelaiDet /code/adet
-RUN cd /code/adet python3 setup.py build develop
-
+RUN cd /code/LUT/trilinear/cpp && sh setup.torch1.x.sh
 
 RUN pip3 install --no-cache-dir Pillow && \
     pip3 install --no-cache-dir fvcore && \
@@ -19,5 +12,4 @@ RUN pip3 install --no-cache-dir Pillow && \
 
 
 WORKDIR /code
-
-ENTRYPOINT ["python3", "adet/tools/train_net.py"]
+ENTRYPOINT ["python3", "LUT/main.py"]
