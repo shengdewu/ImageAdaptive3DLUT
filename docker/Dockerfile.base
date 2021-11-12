@@ -1,0 +1,68 @@
+FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# -- change apt sources
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak
+COPY sources.list /etc/apt/
+
+# -- install some tool
+RUN rm /etc/apt/sources.list.d/cuda.list && \
+    rm /etc/apt/sources.list.d/nvidia-ml.list && \
+    apt-get update -y && apt-get install -y --no-install-recommends \
+    software-properties-common build-essential supervisor sudo ca-certificates \
+    curl unzip wget git vim htop net-tools inetutils-ping openssh-client && \
+    apt-get autoclean && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ~/.cache
+
+# -- install python and some lib
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    libjpeg-dev libpng-dev libtiff-dev libgl1-mesa-glx libgoogle-glog0v5 libprotobuf10 \
+    python3.6-dev python3-pip libpython3.6-dev && \
+    apt-get autoclean && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ~/.cache
+
+# -- change pip sources
+RUN pip3 install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi/simple && \
+    pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple
+
+# -- install py3.6 package
+RUN pip3 install --no-cache-dir Cython==0.29.21 scikit-build==0.11.1 wheel==0.35.1 && \
+    pip3 install --no-cache-dir opencv-python opencv-contrib-python numpy==1.16.0  \
+    numba==0.51.2 scipy==1.4.1 pyyaml==5.1.2 easydict==1.9 json-tricks==3.13.5 pycrypto==2.6.1 \
+    bottle==0.12.18 paste==3.5.0 tqdm==4.54.1 matplotlib==3.3.3 munkres==1.1.4 ffmpeg==1.4 \
+    torch==1.7.1 torchvision==0.8.2 tensorflow-gpu==2.2.0 && pip3 install Keras==2.4.3 &&\
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ~/.cache
+
+# -- install locales && set timezone
+RUN apt-get update -y && apt-get install -y --no-install-recommends tzdata locales locales-all && \
+	locale-gen en_US.UTF-8 && echo "Asia/Shanghai" > /etc/timezone && \
+	rm /etc/localtime && dpkg-reconfigure -f noninteractive tzdata && \
+	apt-get autoclean && apt-get -y clean && \
+	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ~/.cache
+
+
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+
+# -- CREATE APP USER
+# Create the home directory for the new app user.
+# Create an app user so our program doesn't run as root.
+# Set the home directory to our app user's home.
+#RUN mkdir -p /home/worker/ && \
+#    groupadd -r worker --gid 1000 && \
+#    useradd -m -s /bin/bash -r -g worker --uid 1000 -d /home/worker -c "Jiapin Docker image user" worker && \
+#    adduser worker sudo && \
+#    echo "root:jiapin" | chpasswd && \
+#    echo "worker:jiapin" | chpasswd && \
+#    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+#    mkdir /ai && \
+#    chown worker:worker /ai && \
+#    cp -f /root/.bashrc /home/worker/ && \
+#    cp -f /root/.profile /home/worker/ && \
+#    chown worker:worker -R /home/worker
+
+# -- user switch to worker
+#USER worker
+#WORKDIR /home/worker
+#ENV HOME=/home/worker
+

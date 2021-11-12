@@ -1,0 +1,27 @@
+import torch
+from .lut_abc import LutAbc
+
+
+class TV_3D(torch.nn.Module):
+    def __init__(self, dim=33, device='cuda'):
+        super(TV_3D, self).__init__()
+
+        self.weight_r = torch.ones(3, dim, dim, dim - 1, dtype=torch.float)
+        self.weight_r[:, :, :, (0, dim - 2)] *= 2.0
+        self.weight_g = torch.ones(3, dim, dim - 1, dim, dtype=torch.float)
+        self.weight_g[:, :, (0, dim - 2), :] *= 2.0
+        self.weight_b = torch.ones(3, dim - 1, dim, dim, dtype=torch.float)
+        self.weight_b[:, (0, dim - 2), :, :] *= 2.0
+        self.relu = torch.nn.ReLU()
+        self.to(device)
+        return
+
+    def forward(self, lut: LutAbc):
+        dif_r = lut.lut[:, :, :, :-1] - lut.lut[:, :, :, 1:]
+        dif_g = lut.lut[:, :, :-1, :] - lut.lut[:, :, 1:, :]
+        dif_b = lut.lut[:, :-1, :, :] - lut.lut[:, 1:, :, :]
+        tv = torch.mean(torch.mul((dif_r ** 2), self.weight_r)) + torch.mean(torch.mul((dif_g ** 2), self.weight_g)) + torch.mean(torch.mul((dif_b ** 2), self.weight_b))
+
+        mn = torch.mean(self.relu(dif_r)) + torch.mean(self.relu(dif_g)) + torch.mean(self.relu(dif_b))
+
+        return tv, mn
