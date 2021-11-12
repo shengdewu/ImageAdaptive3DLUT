@@ -8,8 +8,8 @@ if torch.cuda.is_available():
         name='trilinear',
         ext_modules=[
             CUDAExtension('trilinear', [
-                'trilinear/cpp/torch_1_x/src/trilinear_cuda.cpp',
-                'trilinear/cpp/torch_1_x/src/trilinear_kernel.cu',
+                'torch_1_x/src/trilinear_cuda.cpp',
+                'torch_1_x/src/trilinear_kernel.cu',
             ])
         ],
         cmdclass={
@@ -17,6 +17,6 @@ if torch.cuda.is_available():
         })
 else:
     print('NO CUDA is found. Fall back to CPU.')
-    setup(name='cpp',
+    setup(name='trilinear',
         ext_modules=[CppExtension('trilinear', ['torch_1_x/src/trilinear.cpp'])],
         cmdclass={'build_ext': BuildExtension})
