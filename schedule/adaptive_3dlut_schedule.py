@@ -20,7 +20,7 @@ class Adaptive3Dlut:
     @staticmethod
     def parse():
         parser = argparse.ArgumentParser()
-        parser.add_argument("--trainer", type=str, default='TrainerPaired', help="trainer type")
+        parser.add_argument("--trainer", type=str, default='TrainerUnPaired', help="trainer type")
         parser.add_argument("--pretrain", action="store_true", help="whether or not load model")
         parser.add_argument("--lut_dim", type=int, default=33, help="dim of the lut")
         parser.add_argument("--lut_nums", type=int, default=2, help="number of the lut")
@@ -32,7 +32,7 @@ class Adaptive3Dlut:
         parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
         parser.add_argument("--gamma", type=float, default=0.0002, help="adam: learning rate")
         parser.add_argument("--step_lr_epoch", type=str, default='10, 20', help="learning rate decay step")
-        parser.add_argument("--is_gpu", action="store_false", help="use cpu or gpu")
+        parser.add_argument("--use_cpu", action="store_true", help="use cpu or gpu")
         parser.add_argument("--b1", type=float, default=0.9, help="adam: decay of first order momentum of gradient")
         parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
         parser.add_argument("--lambda_pixel", type=float, default=1000, help="content preservation weight: 1000 for sRGB input, 10 for XYZ input")
@@ -52,7 +52,7 @@ class Adaptive3Dlut:
         opt.unpaired = False
         if opt.trainer == 'TrainerUnPaired':
             opt.unpaired = True
-        opt.device = 'cuda' if opt.is_gpu else 'cpu'
+        opt.device = 'cpu' if opt.use_cpu else 'cuda'
         return opt
 
     @staticmethod
