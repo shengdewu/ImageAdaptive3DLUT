@@ -78,6 +78,7 @@ class Adaptive3Dlut:
         return trainer
 
     @staticmethod
+    @torch.no_grad()
     def calculate_psnr(trainer, dataloader, device):
         trainer.disable_train()
         avg_psnr = 0
@@ -88,12 +89,14 @@ class Adaptive3Dlut:
             fake_B = torch.round(fake_B * 255)
             real_B = torch.round(real_B * 255)
             mse = Adaptive3Dlut.criterion_pixelwise(fake_B, real_B)
+            mse = torch.clip(mse, 0.00000001, 4294967296.0)
             psnr = 10 * math.log10(255.0 * 255.0 / mse.item())
             avg_psnr += psnr
 
         return avg_psnr / len(dataloader)
 
     @staticmethod
+    @torch.no_grad()
     def visualize_result(trainer, test_dataset, device, save_path, batch_size, epoch='latest'):
         trainer.disable_train()
         idx = np.random.choice(range(len(test_dataset)), batch_size, replace=False)
@@ -107,6 +110,7 @@ class Adaptive3Dlut:
             fake_B = torch.round(fake_B * 255)
             real_B = torch.round(real_B * 255)
             mse = Adaptive3Dlut.criterion_pixelwise(fake_B, real_B)
+            mse = torch.clip(mse, 0.00000001, 4294967296.0)
             psnr = 10 * math.log10(255.0 * 255.0 / mse.item())
             torchvision.utils.save_image(img_sample, '{}/{}-{}-{}.jpg'.format(save_path, epoch, img_name, str(psnr)[:5]), nrow=3, normalize=False)
         return
@@ -164,7 +168,7 @@ class Adaptive3Dlut:
 
                 train_step = epoch * total_train + idx
                 if (train_step + 1) % cfg.checkpoint_interval == 0:
-                    Adaptive3Dlut.check_point(trainer, cfg.output_dir, cfg.max_checkpoints, epoch)
+                    Adaptive3Dlut.check_point(trainer, cfg.output_dir, cfg.max_checkpoints, epoch=epoch)
                     loss_str = ''
                     for k, v in loss_avg.items():
                         if len(loss_str) > 0:
@@ -173,7 +177,7 @@ class Adaptive3Dlut:
 
                     logging.info('epoch {}-iter {} : loss {} '.format(epoch, idx, loss_str))
 
-            Adaptive3Dlut.check_point(trainer, cfg.output_dir, 'latest', cfg.max_checkpoints)
+            Adaptive3Dlut.check_point(trainer, cfg.output_dir, cfg.max_checkpoints, epoch='latest')
 
         Adaptive3Dlut.visualize_result(trainer, test_dataset, cfg.device, cfg.output_dir, cfg.visualize_batch)
         psnr = Adaptive3Dlut.calculate_psnr(trainer, psnr_dataloader, cfg.device)

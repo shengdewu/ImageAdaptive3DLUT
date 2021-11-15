@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -29,9 +29,11 @@ RUN pip3 install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi
 RUN pip3 install --no-cache-dir Cython==0.29.21 scikit-build==0.11.1 wheel==0.35.1 && \
     pip3 install --no-cache-dir opencv-python opencv-contrib-python numpy==1.16.0  \
     numba==0.51.2 scipy==1.4.1 pyyaml==5.1.2 easydict==1.9 json-tricks==3.13.5 pycrypto==2.6.1 \
-    bottle==0.12.18 paste==3.5.0 tqdm==4.54.1 matplotlib==3.3.3 munkres==1.1.4 ffmpeg==1.4 \
-    torch==1.7.1 torchvision==0.8.2 tensorflow-gpu==2.2.0 && pip3 install Keras==2.4.3 &&\
+    bottle==0.12.18 paste==3.5.0 tqdm==4.54.1 matplotlib==3.3.3 munkres==1.1.4 ffmpeg==1.4 && \
+    pip3 install --no-cache-dir Pillow==8.1.2 fvcore==0.1.5.post20210825 scikit-image==0.17.2 && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ~/.cache
+
+RUN pip3 install torch==1.10.0 torchvision==0.11.1 torchaudio==0.10.0
 
 # -- install locales && set timezone
 RUN apt-get update -y && apt-get install -y --no-install-recommends tzdata locales locales-all && \
