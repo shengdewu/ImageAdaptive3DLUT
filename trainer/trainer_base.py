@@ -18,24 +18,27 @@ class TrainerBase:
         self.lut0 = None
         self.lut1 = None
         self.classifier = None
-        self.model_prefix = ''
-
+        self.luts_name_prefix = ''
+        self.cls_name_prefix = ''
         return
+
+    def get_name_prefix(self):
+        return self.luts_name_prefix, self.cls_name_prefix
 
     def save_model(self, save_path, epoch):
         luts = {0: self.lut0.state_dict()}
         luts.update(self.lut1.state_dict(offset=1))
-        torch.save(luts, os.path.join(save_path, 'luts_{}_{}.pth'.format(self.model_prefix, epoch)))
-        torch.save(self.classifier.state_dict(), os.path.join(save_path, 'classifier_{}_{}.pth'.format(self.model_prefix, epoch)))
+        torch.save(luts, os.path.join(save_path, '{}_{}.pth'.format(self.luts_name_prefix, epoch)))
+        torch.save(self.classifier.state_dict(), os.path.join(save_path, '{}_{}.pth'.format(self.cls_name_prefix, epoch)))
         return
 
     def load_model(self, model_path, model_name):
         if model_name == '':
-            model_list = [name for name in os.listdir(model_path) if name.startswith('luts_{}'.format(self.model_prefix))]
+            model_list = [name for name in os.listdir(model_path) if name.startswith(self.luts_name_prefix)]
             model_list.sort(key=lambda fn: os.path.getmtime(os.path.join(model_path, fn)))
             lut_name = os.path.join(model_path, model_list[-1])
 
-            model_list = [name for name in os.listdir(model_path) if name.startswith('classifier_{}'.format(self.model_prefix))]
+            model_list = [name for name in os.listdir(model_path) if name.startswith(self.cls_name_prefix)]
             model_list.sort(key=lambda fn: os.path.getmtime(os.path.join(model_path, fn)))
             class_name = os.path.join(model_path, model_list[-1])
         else:

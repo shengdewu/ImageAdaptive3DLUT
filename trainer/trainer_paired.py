@@ -14,7 +14,8 @@ from .trainer_base import TrainerBase
 class TrainerPaired(TrainerBase):
     def __init__(self, cfg):
         super(TrainerPaired, self).__init__(cfg)
-        self.model_prefix = 'paired'
+        self.luts_name_prefix = 'luts_paired'
+        self.cls_name_prefix = 'classifier_paired'
 
         self.lut0 = Generator_3DLUT_identity(cfg.lut_dim, cfg.device)
         self.lut1 = Generator_3DLUT_n_zero(cfg.lut_dim, cfg.lut_nums, cfg.device)

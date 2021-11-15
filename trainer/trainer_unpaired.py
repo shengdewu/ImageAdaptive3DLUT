@@ -17,7 +17,8 @@ class TrainerUnPaired(TrainerBase):
         self.lambda_gp = cfg.lambda_gp
         self.lambda_pixel = cfg.lambda_pixel
         self.n_critic = cfg.n_critic
-        self.model_prefix = 'unpaired'
+        self.luts_name_prefix = 'luts_unpaired'
+        self.cls_name_prefix = 'classifier_unpaired'
 
         self.lut0 = Generator_3DLUT_identity(cfg.lut_dim, cfg.device)
         self.lut1 = Generator_3DLUT_n_zero(cfg.lut_dim, cfg.lut_nums, cfg.device)

@@ -9,6 +9,7 @@ from dataloader.dataloader import DataLoader
 import torchvision.utils
 import numpy as np
 
+
 class Adaptive3Dlut:
 
     criterion_pixelwise = torch.nn.MSELoss()
@@ -41,10 +42,10 @@ class Adaptive3Dlut:
         parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads to use during batch generation")
         parser.add_argument("--n_critic", type=int, default=1, help="number of training steps for discriminator per iter")
         parser.add_argument("--output_dir", type=str, default="./", help="path to save model")
-        parser.add_argument("--model_name", type=str, default="luts_paired_0.pth, classifier_paired_0.pth", help="path to save model")
+        parser.add_argument("--model_name", type=str, default="", help="path to save model")
         parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between model checkpoints")
-        parser.add_argument("--visualize_epoch", type=int, default=1, help="start epoch for visualize")
-        parser.add_argument("--visualize_batch", type=int, default=5, help="start epoch for visualize")
+        parser.add_argument("--max_checkpoints", type=int, default=5, help="number of model checkpoints")
+        parser.add_argument("--visualize_batch", type=int, default=100, help="start epoch for visualize")
         opt = parser.parse_args()
 
         opt.step_lr_epoch = [int(v.strip()) for v in opt.step_lr_epoch.split(',')]
@@ -93,7 +94,7 @@ class Adaptive3Dlut:
         return avg_psnr / len(dataloader)
 
     @staticmethod
-    def visualize_result(epoch, trainer, test_dataset, device, save_path, batch_size):
+    def visualize_result(trainer, test_dataset, device, save_path, batch_size, epoch='latest'):
         trainer.disable_train()
         idx = np.random.choice(range(len(test_dataset)), batch_size, replace=False)
         for i in idx:
@@ -111,9 +112,35 @@ class Adaptive3Dlut:
         return
 
     @staticmethod
+    def check_point(trainer, output_dir, max_checkpoints, epoch):
+        trainer.save_model(output_dir, epoch=epoch)
+        luts_name, cls_name = trainer.get_name_prefix()
+
+        luts_name_latest = '{}_{}.pth'.format(luts_name, 'latest')
+        cls_name_latest = '{}_{}.pth'.format(cls_name, 'latest')
+
+        luts_model_list = [name for name in os.listdir(output_dir) if name.startswith(luts_name) and name != luts_name_latest]
+        luts_model_list.sort(key=lambda fn: os.path.getmtime(os.path.join(output_dir, fn)))
+
+        cls_model_list = [name for name in os.listdir(output_dir) if name.startswith(cls_name) and name != cls_name_latest]
+        cls_model_list.sort(key=lambda fn: os.path.getmtime(os.path.join(output_dir, fn)))
+
+        assert len(cls_model_list) == len(luts_model_list)
+        if len(luts_model_list) > max_checkpoints:
+            for luts_model in luts_model_list[:len(luts_model_list)-max_checkpoints]:
+                if os.path.exists(os.path.join(output_dir, luts_model)):
+                    os.remove(os.path.join(output_dir, luts_model))
+            for cls_model in cls_model_list[:len(cls_model_list)-max_checkpoints]:
+                if os.path.exists(os.path.join(output_dir, cls_model)):
+                    os.remove(os.path.join(output_dir, cls_model))
+        return
+
+    @staticmethod
     def loop():
         cfg = Adaptive3Dlut.parse()
         Adaptive3Dlut.init_log(__name__, cfg.output_dir)
+        logging.info('load cfg : {}'.format(cfg))
+
         trainer = Adaptive3Dlut.create_trainer(cfg)
         dataloader, psnr_dataloader, test_dataset = DataLoader.create_dataloader(cfg)
         total_train = len(dataloader)
@@ -137,7 +164,7 @@ class Adaptive3Dlut:
 
                 train_step = epoch * total_train + idx
                 if (train_step + 1) % cfg.checkpoint_interval == 0:
-                    trainer.save_model(cfg.output_dir, epoch=epoch)
+                    Adaptive3Dlut.check_point(trainer, cfg.output_dir, cfg.max_checkpoints, epoch)
                     loss_str = ''
                     for k, v in loss_avg.items():
                         if len(loss_str) > 0:
@@ -146,10 +173,9 @@ class Adaptive3Dlut:
 
                     logging.info('epoch {}-iter {} : loss {} '.format(epoch, idx, loss_str))
 
-            trainer.save_model(cfg.output_dir, epoch=None)
+            Adaptive3Dlut.check_point(trainer, cfg.output_dir, 'latest', cfg.max_checkpoints)
 
-            if epoch > cfg.visualize_epoch:
-                Adaptive3Dlut.visualize_result(epoch, trainer, test_dataset, cfg.device, cfg.output_dir, cfg.visualize_batch)
+        Adaptive3Dlut.visualize_result(trainer, test_dataset, cfg.device, cfg.output_dir, cfg.visualize_batch)
         psnr = Adaptive3Dlut.calculate_psnr(trainer, psnr_dataloader, cfg.device)
         logging.info('after train avg psnr in all test data = {}'.format(psnr))
 
