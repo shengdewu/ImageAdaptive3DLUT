@@ -57,7 +57,7 @@ class TrainerPaired(TrainerBase):
 
         self.optimizer_G.step()
 
-        return {'psnr_avg':psnr_avg, 'mse_avg':loss_pixel.item(), 'tv_cons':tv_cons, 'mn_cons':mn_cons, 'weights_norm':weights_norm.detach().item()}
+        return {'psnr_avg':psnr_avg, 'mse_avg':loss_pixel.item(), 'tv_cons':tv_cons.item(), 'mn_cons':mn_cons.item(), 'weights_norm':weights_norm.item()}
 
     def generator(self, img):
         pred = self.classifier(img).squeeze()

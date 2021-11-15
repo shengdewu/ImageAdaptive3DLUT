@@ -19,7 +19,7 @@ class Adaptive3Dlut:
     @staticmethod
     def parse():
         parser = argparse.ArgumentParser()
-        parser.add_argument("--trainer", type=str, default='TrainerUnPaired', help="trainer type")
+        parser.add_argument("--trainer", type=str, default='TrainerPaired', help="trainer type")
         parser.add_argument("--pretrain", action="store_true", help="whether or not load model")
         parser.add_argument("--lut_dim", type=int, default=33, help="dim of the lut")
         parser.add_argument("--lut_nums", type=int, default=2, help="number of the lut")

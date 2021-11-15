@@ -94,8 +94,8 @@ class TrainerUnPaired(TrainerBase):
             loss_G_avg = -torch.mean(pred_fake)
             psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
-        return {'loss_D_avg': loss_D_avg.detach().item(), 'loss_G_avg': loss_G_avg.detach().item(), 'loss_pixel_avg': loss_pixel.detach().item(), 'psnr_avg': psnr_avg,
-                'tv_cons': tv_cons, 'mn_cons': mn_cons, 'weights_norm': weights_norm.detach().item()}
+        return {'loss_D_avg': loss_D_avg.item(), 'loss_G_avg': loss_G_avg.item(), 'loss_pixel_avg': loss_pixel.item(), 'psnr_avg': psnr_avg,
+                'tv_cons': tv_cons.item(), 'mn_cons': mn_cons.item(), 'weights_norm': weights_norm.item()}
 
     def generator(self, img):
         pred = self.classifier(img).squeeze()
