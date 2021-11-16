@@ -28,19 +28,30 @@ class EvalPaired:
         # read image and transform to tensor
         if self.input_color_space == 'sRGB':
             img = Image.open(img_path)
-            img = TF.to_tensor(img).to(self.device)
         elif self.input_color_space == 'XYZ':
             img = cv2.imread(img_path, -1)
-            img = np.array(img)
+        else:
+            raise NotImplemented(self.input_color_space)
+
+        return img.unsqueeze(0)
+
+    def to_tensor(self, x):
+        # read image and transform to tensor
+        if self.input_color_space == 'sRGB':
+            img = TF.to_tensor(x).to(self.device)
+        elif self.input_color_space == 'XYZ':
+            img = np.array(x)
             img = TF_x.to_tensor(img).to(self.device)
         else:
             raise NotImplemented(self.input_color_space)
 
         return img.unsqueeze(0)
 
-    def inference(self, x):
-        if isinstance(x, str):
-            x = self.read(x)
+    def inference(self, img_or_path):
+        if isinstance(img_or_path, str):
+            img_or_path = self.read(img_or_path)
+
+        x = self.to_tensor(img_or_path)
 
         real_A = x.to(self.device)
 
@@ -100,16 +111,32 @@ class EvalPaired:
 
 
 if __name__ == '__main__':
-    unparie = True
-    eval = EvalPaired(33, 2, unpaired=unparie)
-    model_path = '/mnt/data/shengdewu-share/image.enhancement/Image-Adaptive-3DLUT/pretrained_models/sRGB'
-    out_path = '/home/shengdewu/workspace/ImageAdaptive3DLUT/myoutput'
-    cls_name = 'classifier_unpaired.pth'
-    lut_name = 'LUTs_unpaired_int.pth'
-    img_path = '/mnt/data/shengdewu-share/image.enhancement/Image-Adaptive-3DLUT/demo_images/sRGB/a1629.jpg'
-    eval.load_model(model_path, '{},{}'.format(lut_name, cls_name))
-    ndarr = eval.inference(img_path)
+    unparie = False
+    eval = EvalPaired(33, 2, device='cuda', unpaired=unparie)
+    model_path ='/mnt/data/train.output/imagelut'
 
-    im = Image.fromarray(ndarr)
-    im.save('{}/unpaire_result.jpg'.format(out_path), quality=95)
+    out_path = '/mnt/data/train.output/imagelut/output'
+    cls_name = 'classifier_paired_None.pth'
+    lut_name = 'luts_paired_None.pth'
+    img_root = '/mnt/data/fiveK'
+    eval.load_model(model_path, '{},{}'.format(lut_name, cls_name))
+
+    with open(os.path.join(img_root, 'test.txt'), mode='r') as h:
+        lines = h.readlines()
+
+    for line in lines:
+        name = line.strip('\n')
+        img_path = os.path.join(img_root, 'input/JPG/480p', '{}.jpg'.format(name))
+        expert_path = os.path.join(img_root, 'expertC/JPG/480p', '{}.jpg'.format(name))
+
+        img = Image.open(img_path)
+        ndarr = eval.inference(img)
+
+        w, h = img.size
+        im = Image.new(img.mode, size=(w*3, h))
+        im.paste(img, (0, 0))
+        im.paste(Image.fromarray(ndarr), (w, 0))
+        im.paste(Image.open(expert_path), (w*2, 0))
+
+        im.save('{}/{}.jpg'.format(out_path, name), quality=95)
 

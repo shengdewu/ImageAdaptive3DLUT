@@ -63,19 +63,16 @@ class TrainerPaired(TrainerBase):
     def generator(self, img):
         pred = self.classifier(img).squeeze()
 
-        assert pred.shape[0] - 1 == len(self.lut1)
+        assert pred.shape[-1] - 1 == len(self.lut1)
 
         if len(pred.shape) == 1:
             pred = pred.unsqueeze(0)
 
-        gen_a = self.lut0(img)
-        gen_a1 = self.lut1(img)
-
-        combine_a = img.new(img.size())
-        for b in range(img.size(0)):
-            combine_a[b, :, :, :] = pred[b, 0] * gen_a[b, :, :, :]
-            for i, val in gen_a1.items():
-                combine_a[b, :, :, :] = pred[b, i+1] * val[b, :, :, :]
+        shape = pred.shape[0], 1, 1, 1
+        combine_a = pred[:, 0].reshape(shape) * self.lut0(img)
+        lut1 = self.lut1(img)
+        for i, val in lut1.items():
+            combine_a += pred[:, i + 1].reshape(shape) * val
 
         weights_norm = torch.mean(pred ** 2)
         return combine_a, weights_norm

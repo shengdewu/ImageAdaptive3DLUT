@@ -22,7 +22,10 @@ int trilinear_forward(torch::Tensor lut, torch::Tensor image, torch::Tensor outp
         return 0;
     }
 
-    TriLinearForwardCpu(lut_flat, image_flat, output_flat, lut_dim, shift, binsize, width, height, channels);
+    int offset = channels * width * height;
+    for(int b = 0; b < batch; ++b){
+        TriLinearForwardCpu(lut_flat, image_flat + b * offset, output_flat + b * offset, lut_dim, shift, binsize, width, height, channels);
+    }
 
     return 1;
 }
@@ -43,7 +46,10 @@ int trilinear_backward(torch::Tensor image, torch::Tensor image_grad, torch::Ten
         return 0;
     }
 
-    TriLinearBackwardCpu(image_flat, image_grad_flat, lut_grad_flat, lut_dim, shift, binsize, width, height, channels);
+    int offset = channels * width * height;
+    for(int b = 0; b < batch; ++b){
+        TriLinearBackwardCpu(image_flat+b*offset, image_grad_flat+b*offset, lut_grad_flat, lut_dim, shift, binsize, width, height, channels);
+    }
 
     return 1;
 }
@@ -67,11 +73,6 @@ void TriLinearForwardCpu(const float* lut, const float* image, float* output, co
         float g_d = fmod(g,binsize) / binsize;
         float b_d = fmod(b,binsize) / binsize;
 
-//        std::cout << "=======================================" << std::endl;
-//        std::cout << "bin=" << binsize << std::endl;
-//        std::cout << "r=" << r << ", g=" << g << ", b=" << b << std::endl;
-//        std::cout << "r_id=" << r_id << ", g_id=" << g_id << ", b_id=" << b_id << std::endl;
-//        std::cout << "r_d=" << r_d << ", g_d=" << g_d << ", b_d=" << b_d << std::endl;
 
         int id000 = r_id + g_id * dim + b_id * dim * dim;
         int id100 = r_id + 1 + g_id * dim + b_id * dim * dim;
@@ -82,9 +83,6 @@ void TriLinearForwardCpu(const float* lut, const float* image, float* output, co
         int id011 = r_id + (g_id + 1) * dim + (b_id + 1) * dim * dim;
         int id111 = r_id + 1 + (g_id + 1) * dim + (b_id + 1) * dim * dim;
 
-//        std::cout << "loc"
-//                  << id000 << "," << id100 << ","<< id010 << ","<< id110 << ","<< id001 << ","
-//                  << id101 << ","<< id011 << ","<< id111 << std::endl;
 
         float w000 = (1-r_d)*(1-g_d)*(1-b_d);
         float w100 = r_d*(1-g_d)*(1-b_d);
@@ -95,23 +93,6 @@ void TriLinearForwardCpu(const float* lut, const float* image, float* output, co
         float w011 = (1-r_d)*g_d*b_d;
         float w111 = r_d*g_d*b_d;
 
-//        std::cout << "w"
-//                  << w000 << "," << w100 << ","<< w010 << ","<< w110 << ","<< w001 << ","
-//                  << w101 << ","<< w011 << ","<< w111 << std::endl;
-//
-//
-//        std::cout << "lut r"
-//                  << lut[id000] << "," << lut[id100] << ","<< lut[id010] << ","<< lut[id110] << ","<< lut[id001] << ","
-//                  << lut[id101] << ","<< lut[id011] << ","<< lut[id111] << std::endl;
-//
-//
-//        std::cout << "lut g"
-//                  << lut[id000 + shift] << "," << lut[id100 + shift] << ","<< lut[id010 + shift] << ","<< lut[id110 + shift] << ","<< lut[id001 + shift] << ","
-//                  << lut[id101 + shift] << ","<< lut[id011 + shift] << ","<< lut[id111 + shift] << std::endl;
-//
-//        std::cout << "lut b"
-//                  << lut[id000 + shift * 2] << "," << lut[id100 + shift * 2] << ","<< lut[id010 + shift * 2] << ","<< lut[id110 + shift * 2] << ","<< lut[id001 + shift * 2] << ","
-//                  << lut[id101 + shift * 2] << ","<< lut[id011 + shift * 2] << ","<< lut[id111 + shift * 2] << std::endl;
 
         output[index] = w000 * lut[id000] + w100 * lut[id100] +
                         w010 * lut[id010] + w110 * lut[id110] +
