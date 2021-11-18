@@ -25,7 +25,7 @@ class Adaptive3Dlut:
         parser.add_argument("--lut_dim", type=int, default=33, help="dim of the lut")
         parser.add_argument("--lut_nums", type=int, default=2, help="number of the lut")
         parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from, 0 starts from scratch, >0 starts from saved checkpoints")
-        parser.add_argument("--n_epochs", type=int, default=800, help="total number of epochs of training")
+        parser.add_argument("--n_epochs", type=int, default=400, help="total number of epochs of training")
         parser.add_argument("--input_color_space", type=str, default="sRGB", help="input color space: sRGB or XYZ")
         parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
         parser.add_argument("--data_path", type=str, default='', help="size of the batches")
@@ -97,14 +97,11 @@ class Adaptive3Dlut:
 
     @staticmethod
     @torch.no_grad()
-    def visualize_result(trainer, test_dataset, device, save_path, batch_size, epoch='latest'):
+    def visualize_result(trainer, dataloader, device, save_path):
         trainer.disable_train()
-        idx = np.random.choice(range(len(test_dataset)), batch_size, replace=False)
-        for i in idx:
-            batch = test_dataset[i]
-            real_A = batch["A_input"].to(device).unsqueeze(0)
-            real_B = batch["A_exptC"].to(device).unsqueeze(0)
-            img_name = batch["input_name"]
+        for i, batch in enumerate(dataloader):
+            real_A = batch["A_input"].to(device)
+            real_B = batch["A_exptC"].to(device)
             fake_B, weights_norm = trainer.generator(real_A)
             img_sample = torch.cat((real_A.data, fake_B.data, real_B.data), -1)
             fake_B = torch.round(fake_B * 255)
@@ -112,7 +109,7 @@ class Adaptive3Dlut:
             mse = Adaptive3Dlut.criterion_pixelwise(fake_B, real_B)
             mse = torch.clip(mse, 0.00000001, 4294967296.0)
             psnr = 10 * math.log10(255.0 * 255.0 / mse.item())
-            torchvision.utils.save_image(img_sample, '{}/{}-{}-{}.jpg'.format(save_path, epoch, img_name, str(psnr)[:5]), nrow=3, normalize=False)
+            torchvision.utils.save_image(img_sample, '{}/{}-{}.jpg'.format(save_path, i, str(psnr)[:5]), nrow=1, normalize=False)
         return
 
     @staticmethod
@@ -179,7 +176,7 @@ class Adaptive3Dlut:
 
             Adaptive3Dlut.check_point(trainer, cfg.output_dir, cfg.max_checkpoints, epoch='latest')
 
-        Adaptive3Dlut.visualize_result(trainer, test_dataset, cfg.device, cfg.output_dir, cfg.visualize_batch)
+        Adaptive3Dlut.visualize_result(trainer, psnr_dataloader, cfg.device, cfg.output_dir)
         psnr = Adaptive3Dlut.calculate_psnr(trainer, psnr_dataloader, cfg.device)
         logging.info('after train avg psnr in all test data = {}'.format(psnr))
 
