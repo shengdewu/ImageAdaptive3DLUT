@@ -7,7 +7,6 @@ import math
 from trainer import build_trainer
 from dataloader.dataloader import DataLoader
 import torchvision.utils
-import numpy as np
 
 
 class Adaptive3Dlut:
@@ -21,6 +20,7 @@ class Adaptive3Dlut:
     def parse():
         parser = argparse.ArgumentParser()
         parser.add_argument("--trainer", type=str, default='TrainerUnPaired', help="trainer type")
+        parser.add_argument("--classifier", type=str, default='ClassifierResnet', help="classifier type [Classifier, ClassifierResnet]")
         parser.add_argument("--pretrain", action="store_true", help="whether or not load model")
         parser.add_argument("--lut_dim", type=int, default=33, help="dim of the lut")
         parser.add_argument("--lut_nums", type=int, default=2, help="number of the lut")
@@ -42,6 +42,7 @@ class Adaptive3Dlut:
         parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads to use during batch generation")
         parser.add_argument("--n_critic", type=int, default=1, help="number of training steps for discriminator per iter")
         parser.add_argument("--output_dir", type=str, default="./", help="path to save model")
+        parser.add_argument("--classifier_model_path", type=str, default='', help="model path of classifier")
         parser.add_argument("--model_name", type=str, default="", help="path to save model")
         parser.add_argument("--checkpoint_interval", type=int, default=1, help="interval between model checkpoints")
         parser.add_argument("--max_checkpoints", type=int, default=5, help="number of model checkpoints")

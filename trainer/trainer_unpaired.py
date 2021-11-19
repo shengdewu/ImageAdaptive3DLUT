@@ -3,11 +3,17 @@ import itertools
 import math
 from trainer import TRAINER_ARCH_REGISTRY
 from models.lut.generator_3dlut import Generator_3DLUT_identity, Generator_3DLUT_n_zero
-from models.classifier.classifier import Classifier_unpaired
 from models.discriminator.discriminator import Discriminator
 from models.lut.total_variation import TV_3D
 from models.functional import weights_init_normal_classifier, compute_gradient_penalty
 from .trainer_base import TrainerBase
+from models import build_classifier
+
+
+CLASSIFIER = [
+    'ClassifierUnpaired',
+    'ClassifierResnetUnpaired'
+]
 
 
 @TRAINER_ARCH_REGISTRY.register()
@@ -22,12 +28,19 @@ class TrainerUnPaired(TrainerBase):
 
         self.lut0 = Generator_3DLUT_identity(cfg.lut_dim, cfg.device)
         self.lut1 = Generator_3DLUT_n_zero(cfg.lut_dim, cfg.lut_nums, cfg.device)
-        self.classifier = Classifier_unpaired(device=cfg.device, class_num=cfg.lut_nums + 1)
+
+        assert cfg.classifier + 'Unpaired' in CLASSIFIER, 'in trainer unpaired invalid classifier {}'.format(cfg.classifier + 'Unpaired')
+        kwargs = dict()
+        kwargs['device'] = cfg.device
+        kwargs['num_classes'] = cfg.lut_nums+1
+        if cfg.classifier.endswith('Resnet'):
+            kwargs['model_path'] = cfg.classifier_model_path
+        self.classifier = build_classifier(cfg.classifier + 'Unpaired', **kwargs)
+        self.classifier.init_normal_classifier()
+
         self.discriminator = Discriminator(device=cfg.device)
         self.tv3 = TV_3D(cfg.lut_dim, cfg.device)
 
-        self.classifier.apply(weights_init_normal_classifier)
-        torch.nn.init.constant_(self.classifier.model[12].bias.data, 1.0)  # last layer
         self.discriminator.apply(weights_init_normal_classifier)
 
         # Loss functions

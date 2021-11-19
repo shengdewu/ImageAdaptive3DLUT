@@ -1,9 +1,21 @@
 import torch
+from .resnet import create_resnet
 from models.functional import discriminator_block
+from models import CLASSIFIER_ARCH_REGISTRY
+from models.functional import weights_init_normal_classifier
 
 
+__all__ = [
+    'Classifier',
+    'ClassifierUnpaired',
+    'ClassifierResnet',
+    'ClassifierResnetUnpaired'
+]
+
+
+@CLASSIFIER_ARCH_REGISTRY.register()
 class Classifier(torch.nn.Module):
-    def __init__(self, in_channels=3, device='cuda', class_num=3):
+    def __init__(self, device='cuda', num_classes=3):
         super(Classifier, self).__init__()
 
         self.model = torch.nn.Sequential(
@@ -17,18 +29,25 @@ class Classifier(torch.nn.Module):
             *discriminator_block(128, 128),
             # *discriminator_block(128, 128, normalization=True),
             torch.nn.Dropout(p=0.5),
-            torch.nn.Conv2d(128, class_num, 8, padding=0),
+            torch.nn.Conv2d(128, num_classes, 8, padding=0),
         )
         self.to(device)
+        return
+
+    def init_normal_classifier(self):
+        self.apply(weights_init_normal_classifier)
+        #torch.nn.init.constant_(self.model[12].bias.data, 1.0)  # last layer paper error ?
+        torch.nn.init.constant_(self.model[-1].bias.data, 1.0)
         return
 
     def forward(self, img_input):
         return self.model(img_input)
 
 
-class Classifier_unpaired(torch.nn.Module):
-    def __init__(self, in_channels=3, device='cuda', class_num=3):
-        super(Classifier_unpaired, self).__init__()
+@CLASSIFIER_ARCH_REGISTRY.register()
+class ClassifierUnpaired(torch.nn.Module):
+    def __init__(self, device='cuda', num_classes=3):
+        super(ClassifierUnpaired, self).__init__()
 
         self.model = torch.nn.Sequential(
             torch.nn.Upsample(size=(256, 256), mode='bilinear'),
@@ -40,10 +59,54 @@ class Classifier_unpaired(torch.nn.Module):
             *discriminator_block(64, 128),
             *discriminator_block(128, 128),
             # *discriminator_block(128, 128),
-            torch.nn.Conv2d(128, class_num, 8, padding=0),
+            torch.nn.Conv2d(128, num_classes, 8, padding=0),
         )
         self.to(device)
         return
 
+    def init_normal_classifier(self):
+        self.apply(weights_init_normal_classifier)
+        #torch.nn.init.constant_(self.model[12].bias.data, 1.0)  # last layer paper error?
+        torch.nn.init.constant_(self.model[-1].bias.data, 1.0)  # last layer paper error?
+        return
+
     def forward(self, img_input):
         return self.model(img_input)
+
+
+@CLASSIFIER_ARCH_REGISTRY.register()
+class ClassifierResnet(torch.nn.Module):
+    def __init__(self, num_classes=3, device='cuda', model_path=''):
+        super(ClassifierResnet, self).__init__()
+        kwargs = dict()
+        kwargs['norm_layer'] = torch.nn.InstanceNorm2d
+        self.resnet, self.init = create_resnet(num_classes=num_classes, device=device, model_path=model_path, **kwargs)
+        self.to(device)
+        return
+
+    def init_normal_classifier(self):
+        if self.init:
+            self.apply(weights_init_normal_classifier)
+        torch.nn.init.constant_(self.resnet.fc.bias.data, 1.0)  # last layer
+        return
+
+    def forward(self, x):
+        return self.resnet(x)
+
+
+@CLASSIFIER_ARCH_REGISTRY.register()
+class ClassifierResnetUnpaired(torch.nn.Module):
+    def __init__(self, num_classes=3, device='cuda', model_path=''):
+        super(ClassifierResnetUnpaired, self).__init__()
+        self.resnet, self.init = create_resnet(num_classes=num_classes, device=device, model_path=model_path)
+        self.to(device)
+        return
+
+    def init_normal_classifier(self):
+        if self.init:
+            self.apply(weights_init_normal_classifier)
+        torch.nn.init.constant_(self.resnet.fc.bias.data, 1.0)  # last layer
+        return
+
+    def forward(self, x):
+        return self.resnet(x)

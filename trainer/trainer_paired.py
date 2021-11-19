@@ -1,13 +1,18 @@
 import torch
 import itertools
-import os
 import math
 from trainer import TRAINER_ARCH_REGISTRY
 from models.lut.generator_3dlut import Generator_3DLUT_identity, Generator_3DLUT_n_zero
-from models.classifier.classifier import Classifier
 from models.lut.total_variation import TV_3D
 from models.functional import weights_init_normal_classifier
 from .trainer_base import TrainerBase
+from models import build_classifier
+
+
+CLASSIFIER = [
+    'Classifier',
+    'ClassifierResnet',
+]
 
 
 @TRAINER_ARCH_REGISTRY.register()
@@ -19,11 +24,17 @@ class TrainerPaired(TrainerBase):
 
         self.lut0 = Generator_3DLUT_identity(cfg.lut_dim, cfg.device)
         self.lut1 = Generator_3DLUT_n_zero(cfg.lut_dim, cfg.lut_nums, cfg.device)
-        self.classifier = Classifier(device=cfg.device, class_num=cfg.lut_nums+1)
-        self.tv3 = TV_3D(cfg.lut_dim, cfg.device)
 
-        self.classifier.apply(weights_init_normal_classifier)
-        torch.nn.init.constant_(self.classifier.model[12].bias.data, 1.0) # last layer
+        assert cfg.classifier in CLASSIFIER, 'in trainer paired invalid classifier {}'.format(cfg.classifier)
+        kwargs = dict()
+        kwargs['device'] = cfg.device
+        kwargs['num_classes'] = cfg.lut_nums+1
+        if cfg.classifier.endswith('Resnet'):
+            kwargs['model_path'] = cfg.classifier_model_path
+        self.classifier = build_classifier(cfg.classifier, **kwargs)
+        self.classifier.init_normal_classifier()
+
+        self.tv3 = TV_3D(cfg.lut_dim, cfg.device)
 
         # Loss functions
         self.criterion_pixelwise = torch.nn.MSELoss()
