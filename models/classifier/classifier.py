@@ -78,9 +78,9 @@ class ClassifierUnpaired(torch.nn.Module):
 class ClassifierResnet(torch.nn.Module):
     def __init__(self, num_classes=3, device='cuda', model_path=''):
         super(ClassifierResnet, self).__init__()
-        kwargs = dict()
-        kwargs['norm_layer'] = torch.nn.InstanceNorm2d
-        self.resnet, self.init = create_resnet(num_classes=num_classes, device=device, model_path=model_path, **kwargs)
+        # kwargs = dict()
+        # kwargs['norm_layer'] = torch.nn.InstanceNorm2d
+        self.resnet, self.init = create_resnet(num_classes=num_classes, device=device, model_path=model_path)
         self.to(device)
         return
 

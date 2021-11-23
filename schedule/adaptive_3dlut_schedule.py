@@ -20,7 +20,8 @@ class Adaptive3Dlut:
     def parse():
         parser = argparse.ArgumentParser()
         parser.add_argument("--trainer", type=str, default='TrainerUnPaired', help="trainer type")
-        parser.add_argument("--classifier", type=str, default='ClassifierResnet', help="classifier type [Classifier, ClassifierResnet]")
+        parser.add_argument("--classifier", type=str, default='Classifier', help="classifier type [Classifier, ClassifierResnet]")
+        parser.add_argument("--resnet_arch", type=str, default='resnet152', help="resnet arch [resnet18, resnet34, resnet50, resnet101, resnet152, resnext50_32x4d, resnext101_32x8d, wide_resnet50_2, wide_resnet101_2]")
         parser.add_argument("--pretrain", action="store_true", help="whether or not load model")
         parser.add_argument("--lut_dim", type=int, default=33, help="dim of the lut")
         parser.add_argument("--lut_nums", type=int, default=2, help="number of the lut")
