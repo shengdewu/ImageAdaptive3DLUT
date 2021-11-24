@@ -1,0 +1,38 @@
+
+SOLVER:
+  BASE_LR: 0.0002
+  MAX_ITER: 50
+  CHECK_PERIOD: 2
+  MAX_KEEP: 5
+  IMS_PER_BATCH: 2
+  LAMBDA_GP: 10
+  LAMBDA_PIXEL: 1000
+  LAMBDA_SMOOTH: 1e-4
+  LAMBDA_MONOTONICITY: 10.0
+  N_CRITIC: 1
+  ADAM:
+    B1: 0.9
+    B2: 0.999
+
+MODEL:
+  WEIGHTS: ""
+  DEVICE: "cuda"
+  ARCH: "AdaptivePairedModel"
+  LUT:
+    SUPPLEMENT_NUMS: 2
+    DIMS: 33
+  CLASSIFIER:
+    PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet152-394f9c45.pth"
+    ARCH: "Classifier"
+    RESNET_ARCH: "resnet152"
+
+INPUT:
+  COLOR_SPACE: "sRGB"  #srgb xyz
+  UNPAIRED: false
+
+DATALOADER:
+  NUM_WORKERS: 2
+  ROOT_PAT: "/mnt/data/shengdewu-share/image.enhancement/enlighten.image/fiveK"
+
+OUTPUT_DIR: "/mnt/data/train.output/imagelut.test"
+

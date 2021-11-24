@@ -17,9 +17,12 @@ class TV_3D(torch.nn.Module):
         return
 
     def forward(self, lut: LutAbc):
-        dif_r = lut.lut[:, :, :, :-1] - lut.lut[:, :, :, 1:]
-        dif_g = lut.lut[:, :, :-1, :] - lut.lut[:, :, 1:, :]
-        dif_b = lut.lut[:, :-1, :, :] - lut.lut[:, 1:, :, :]
+        module = lut
+        if isinstance(lut, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
+            module = lut.module
+        dif_r = module.lut[:, :, :, :-1] - module.lut[:, :, :, 1:]
+        dif_g = module.lut[:, :, :-1, :] - module.lut[:, :, 1:, :]
+        dif_b = module.lut[:, :-1, :, :] - module.lut[:, 1:, :, :]
         tv = torch.mean(torch.mul((dif_r ** 2), self.weight_r)) + torch.mean(torch.mul((dif_g ** 2), self.weight_g)) + torch.mean(torch.mul((dif_b ** 2), self.weight_b))
 
         mn = torch.mean(self.relu(dif_r)) + torch.mean(self.relu(dif_g)) + torch.mean(self.relu(dif_b))

@@ -1,21 +1,13 @@
 import torch
 from .resnet import create_resnet
 from models.functional import discriminator_block
-from models import CLASSIFIER_ARCH_REGISTRY
+from models.classifier import CLASSIFIER_ARCH_REGISTRY
 from models.functional import weights_init_normal_classifier
-
-
-__all__ = [
-    'Classifier',
-    'ClassifierUnpaired',
-    'ClassifierResnet',
-    'ClassifierResnetUnpaired'
-]
 
 
 @CLASSIFIER_ARCH_REGISTRY.register()
 class Classifier(torch.nn.Module):
-    def __init__(self, device='cuda', num_classes=3):
+    def __init__(self, cfg):
         super(Classifier, self).__init__()
 
         self.model = torch.nn.Sequential(
@@ -29,9 +21,9 @@ class Classifier(torch.nn.Module):
             *discriminator_block(128, 128),
             # *discriminator_block(128, 128, normalization=True),
             torch.nn.Dropout(p=0.5),
-            torch.nn.Conv2d(128, num_classes, 8, padding=0),
+            torch.nn.Conv2d(128, cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, 8, padding=0),
         )
-        self.to(device)
+        self.to(cfg.MODEL.DEVICE)
         return
 
     def init_normal_classifier(self):
@@ -46,7 +38,7 @@ class Classifier(torch.nn.Module):
 
 @CLASSIFIER_ARCH_REGISTRY.register()
 class ClassifierUnpaired(torch.nn.Module):
-    def __init__(self, device='cuda', num_classes=3):
+    def __init__(self, cfg):
         super(ClassifierUnpaired, self).__init__()
 
         self.model = torch.nn.Sequential(
@@ -59,9 +51,9 @@ class ClassifierUnpaired(torch.nn.Module):
             *discriminator_block(64, 128),
             *discriminator_block(128, 128),
             # *discriminator_block(128, 128),
-            torch.nn.Conv2d(128, num_classes, 8, padding=0),
+            torch.nn.Conv2d(128, cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, 8, padding=0),
         )
-        self.to(device)
+        self.to(cfg.MODEL.DEVICE)
         return
 
     def init_normal_classifier(self):
@@ -76,30 +68,10 @@ class ClassifierUnpaired(torch.nn.Module):
 
 @CLASSIFIER_ARCH_REGISTRY.register()
 class ClassifierResnet(torch.nn.Module):
-    def __init__(self, num_classes=3, device='cuda', model_path=''):
+    def __init__(self, cfg):
         super(ClassifierResnet, self).__init__()
-        # kwargs = dict()
-        # kwargs['norm_layer'] = torch.nn.InstanceNorm2d
-        self.resnet, self.init = create_resnet(num_classes=num_classes, device=device, model_path=model_path)
-        self.to(device)
-        return
-
-    def init_normal_classifier(self):
-        if self.init:
-            self.apply(weights_init_normal_classifier)
-        torch.nn.init.constant_(self.resnet.fc.bias.data, 1.0)  # last layer
-        return
-
-    def forward(self, x):
-        return self.resnet(x)
-
-
-@CLASSIFIER_ARCH_REGISTRY.register()
-class ClassifierResnetUnpaired(torch.nn.Module):
-    def __init__(self, num_classes=3, device='cuda', model_path=''):
-        super(ClassifierResnetUnpaired, self).__init__()
-        self.resnet, self.init = create_resnet(num_classes=num_classes, device=device, model_path=model_path)
-        self.to(device)
+        self.resnet, self.init = create_resnet(num_classes=cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, device=cfg.MODEL.DEVICE, arch=cfg.MODEL.CLASSIFIER.RESNET_ARCH, model_path=cfg.MODEL.CLASSIFIER.PRETRAINED_PATH)
+        self.to(cfg.MODEL.DEVICE)
         return
 
     def init_normal_classifier(self):

@@ -1,6 +1,9 @@
 import torch.utils.data
 from dataloader.datasets_rgb import ImageDataset_sRGB, ImageDataset_sRGB_unpaired
 from dataloader.datasets_xyz import ImageDataset_XYZ, ImageDataset_XYZ_unpaired
+from engine.samplers.distributed_sampler import TrainingSampler
+from engine.data.common import ToIterableDataset
+import multiprocessing
 
 
 class DataLoader:
@@ -71,41 +74,72 @@ class DataLoader:
         return DataLoader.fromlist(batch_data)
 
     @staticmethod
-    def create_dataloader(cfg):
-        if cfg.input_color_space == 'sRGB':
-            if cfg.unpaired:
-                train_dataset = ImageDataset_sRGB_unpaired(cfg.data_path, mode="train")
-                test_dataset = ImageDataset_sRGB_unpaired(cfg.data_path, mode="test")
+    def create_dataset(cfg):
+        if cfg.INPUT.COLOR_SPACE == 'sRGB':
+            if cfg.INPUT.UNPAIRED:
+                train_dataset = ImageDataset_sRGB_unpaired(cfg.DATALOADER.ROOT_PAT, mode="train")
+                test_dataset = ImageDataset_sRGB_unpaired(cfg.DATALOADER.ROOT_PAT, mode="test")
             else:
-                train_dataset = ImageDataset_sRGB(cfg.data_path, mode="train")
-                test_dataset = ImageDataset_sRGB(cfg.data_path, mode="test")
+                train_dataset = ImageDataset_sRGB(cfg.DATALOADER.ROOT_PAT, mode="train")
+                test_dataset = ImageDataset_sRGB(cfg.DATALOADER.ROOT_PAT, mode="test")
 
-        elif cfg.input_color_space == 'XYZ':
+        elif cfg.INPUT.COLOR_SPACE == 'XYZ':
 
-            if cfg.unpaired:
-                train_dataset = ImageDataset_XYZ_unpaired(cfg.data_path, mode="train")
-                test_dataset = ImageDataset_XYZ_unpaired(cfg.data_path, mode="test")
+            if cfg.INPUT.UNPAIRED:
+                train_dataset = ImageDataset_XYZ_unpaired(cfg.DATALOADER.ROOT_PAT, mode="train")
+                test_dataset = ImageDataset_XYZ_unpaired(cfg.DATALOADER.ROOT_PAT, mode="test")
             else:
-                train_dataset = ImageDataset_XYZ(cfg.data_path, mode="train")
-                test_dataset = ImageDataset_XYZ(cfg.data_path, mode="test")
+                train_dataset = ImageDataset_XYZ(cfg.DATALOADER.ROOT_PAT, mode="train")
+                test_dataset = ImageDataset_XYZ(cfg.DATALOADER.ROOT_PAT, mode="test")
 
         else:
-            raise NotImplemented(cfg.input_color_space)
+            raise NotImplemented(cfg.INPUT.COLOR_SPACE)
+        return train_dataset, test_dataset
 
-        dataloader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=cfg.batch_size,
+    @staticmethod
+    def create_dataloader(dataset, num_workers=1, batch_size=1):
+        max_workers = multiprocessing.cpu_count()
+        num_workers = num_workers if num_workers < max_workers else max_workers
+        return torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
             shuffle=True,
-            num_workers=cfg.n_cpu,
+            num_workers=num_workers,
             collate_fn=DataLoader.collate_fn
         )
 
-        psnr_dataloader = torch.utils.data.DataLoader(
-            test_dataset,
-            batch_size=cfg.batch_size,
-            shuffle=False,
-            num_workers=1,
-            collate_fn=DataLoader.collate_fn
-        )
+    @staticmethod
+    def create_sampler_dataloader(dataset, batch_size, num_workers):
+        sampler = TrainingSampler(len(dataset))
 
-        return dataloader, psnr_dataloader, test_dataset
+        dataset = ToIterableDataset(dataset, sampler)
+
+        max_workers = multiprocessing.cpu_count()
+        num_workers = num_workers if num_workers < max_workers else max_workers
+
+        return torch.utils.data.DataLoader(
+                                    dataset=dataset,
+                                    batch_size=batch_size,
+                                    shuffle=False,
+                                    num_workers=num_workers,
+                                    pin_memory=True,
+                                    collate_fn=DataLoader.collate_fn,
+                                    drop_last=True)
+
+    @staticmethod
+    def create_distribute_sampler_dataloder(dataset, batch_size, rank, world_size, num_workers):
+        sampler = TrainingSampler(len(dataset), rank=rank, world_size=world_size)
+
+        dataset = ToIterableDataset(dataset, sampler)
+
+        max_workers = multiprocessing.cpu_count()
+        num_workers = num_workers if num_workers < max_workers else max_workers
+
+        return torch.utils.data.DataLoader(
+                                    dataset=dataset,
+                                    batch_size=batch_size,
+                                    shuffle=False,
+                                    num_workers=num_workers,
+                                    pin_memory=True,
+                                    collate_fn=DataLoader.collate_fn,
+                                    drop_last=True)

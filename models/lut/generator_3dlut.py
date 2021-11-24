@@ -67,15 +67,28 @@ class Generator_3DLUT_n_zero:
             parameters.append(lut.parameters())
         return parameters
 
+    @staticmethod
+    def __get_model_state_dict(model):
+        if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
+            return model.module.state_dict()
+        return model.state_dict()
+
+    @staticmethod
+    def __load_model_state_dict(model, state_dict):
+        if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
+            model.module.load_state_dict(state_dict)
+        else:
+            model.load_state_dict(state_dict)
+
     def state_dict(self, offset=0):
         state_dict = dict()
         for i, lut in self.generator_3d_lut.items():
-            state_dict[i+offset] = lut.state_dict()
+            state_dict[i+offset] = self.__get_model_state_dict(lut)
         return state_dict
 
     def load_state_dict(self, state_dict:dict, offset=1):
         for i, lut in self.generator_3d_lut.items():
-            lut.load_state_dict(state_dict[i+offset])
+            self.__load_model_state_dict(lut, state_dict[i+offset])
         return
 
     def enable_parallel(self):
@@ -117,6 +130,12 @@ class Generator_3DLUT_n_zero:
     def foreach(self):
         for k, lut in self.generator_3d_lut.items():
             yield k, lut
+        return
+
+    def upate(self, luts):
+        self.generator_3d_lut.clear()
+        for k, lut in luts.items():
+            self.generator_3d_lut[k] = lut
         return
 
     def __len__(self):

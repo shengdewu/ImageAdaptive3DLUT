@@ -1,4 +1,5 @@
-from schedule.adaptive_3dlut_schedule import Adaptive3Dlut
+from schedule.AdaptiveScheduler import AdaptiveScheduler
+
 
 if __name__ == '__main__':
-    Adaptive3Dlut.loop()
+    AdaptiveScheduler().schedule()
