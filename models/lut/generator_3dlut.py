@@ -14,18 +14,7 @@ class Generator_3DLUT_identity(LutAbc):
     def __init__(self, dim=33, device='cuda'):
         super(Generator_3DLUT_identity, self).__init__()
 
-        lines = self.__load_identify_lut(dim)
-
-        buffer = np.zeros((3, dim, dim, dim), dtype=np.float32)
-
-        for i in range(0, dim):
-            for j in range(0, dim):
-                for k in range(0, dim):
-                    n = i * dim * dim + j * dim + k
-                    x = lines[n].split()
-                    buffer[0, i, j, k] = float(x[0])
-                    buffer[1, i, j, k] = float(x[1])
-                    buffer[2, i, j, k] = float(x[2])
+        buffer = self.generate_identity_lut(dim)
 
         self._lut = torch.nn.Parameter(torch.from_numpy(buffer).requires_grad_(True))
         self.tilinear_interpolation = TrilinearInterpolationModel()
@@ -33,15 +22,16 @@ class Generator_3DLUT_identity(LutAbc):
         return
 
     @staticmethod
-    def __load_identify_lut(dim):
-        dir_name = os.path.dirname(__file__)
-        if dim == 33:
-            file = open(os.path.join(dir_name, 'IdentityLUT33.txt'), 'r')
-        elif dim == 64:
-            file = open(os.path.join(dir_name, 'IdentityLUT64.txt'), 'r')
-        else:
-            raise FileNotFoundError('not found identify lut for dim {}'.format(dim))
-        return file.readlines()
+    def generate_identity_lut(dim):
+        lut3d = np.zeros((3, dim, dim, dim), dtype=np.float32)
+        step = np.float32(1.0 / float(dim))
+        for r in range(dim):
+            for g in range(dim):
+                for b in range(dim):
+                    lut3d[0, r, g, b] = step * r
+                    lut3d[1, r, g, b] = step * g
+                    lut3d[2, r, g, b] = step * b
+        return lut3d
 
     def forward(self, x):
         _, output = self.tilinear_interpolation(self._lut, x)
