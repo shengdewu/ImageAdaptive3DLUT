@@ -36,7 +36,7 @@ class AdaptiveTrainer:
 
         self.checkpoint = CheckpointerManager(max_iter=cfg.SOLVER.MAX_ITER,
                                               save_dir=cfg.OUTPUT_DIR,
-                                              check_period=cfg.SOLVER.CHECK_PERIOD,
+                                              check_period=cfg.SOLVER.CHECKPOINT_PERIOD,
                                               max_keep=cfg.SOLVER.MAX_KEEP,
                                               file_prefix=cfg.MODEL.ARCH,
                                               save_to_disk=comm.is_main_process())
