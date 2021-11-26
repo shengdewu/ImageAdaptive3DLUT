@@ -3,7 +3,6 @@ import numpy as np
 import random
 from torch.utils.data import Dataset
 import cv2
-import torchvision.transforms as transforms
 import dataloader.torchvision_x_functional as TF_x
 import torchvision.transforms.functional as TF
 from dataloader import DATASET_ARCH_REGISTRY
@@ -71,6 +70,16 @@ class ImageDatasetXinTu(Dataset):
             img_input = cv2.cvtColor(img_input, cv2.COLOR_BGR2RGB)
             img_exptC = cv2.imread(self.test_expert_files[index], cv2.IMREAD_COLOR)
             img_exptC = cv2.cvtColor(img_exptC, cv2.COLOR_BGR2RGB)
+
+        h1, w1 = img_input.shape[0: 2]
+        h2, w2 = img_exptC.shape[0: 2]
+        if h1 != h2 or w1 != w2:
+            h = max(h1, h2)
+            w = max(w1, w2)
+            if h != h1 or w != w1:
+                img_input = cv2.resize(img_input, dsize=(w, h))
+            if h != h2 or w != w2:
+                img_exptC = cv2.resize(img_exptC, dsize=(w, h))
 
         if self.mode == "train":
 
@@ -172,6 +181,19 @@ class ImageDatasetXinTuUnpaired(Dataset):
             img_exptC = cv2.imread(self.test_expert_files[index], cv2.IMREAD_COLOR)
             img_exptC = cv2.cvtColor(img_exptC, cv2.COLOR_BGR2RGB)
             img2 = img_exptC
+
+        h1, w1 = img_input.shape[0: 2]
+        h2, w2 = img_exptC.shape[0: 2]
+        h3, w3 = img2.shape[0: 2]
+        if h1 != h2 or w1 != w2 or h1 != h3 or w1 != w3:
+            h = max(h1, h2, h3)
+            w = max(w1, w2, w3)
+            if h != h1 or w != w1:
+                img_input = cv2.resize(img_input, dsize=(w, h))
+            if h != h2 or w != w2:
+                img_exptC = cv2.resize(img_exptC, dsize=(w, h))
+            if h != h3 or w != w3:
+                img2 = cv2.resize(img2, dsize=(w, h))
 
         if self.mode == "train":
             ratio_H = np.random.uniform(0.6, 1.0)
