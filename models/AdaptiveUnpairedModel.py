@@ -18,8 +18,6 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
         self.lambda_gp = cfg.SOLVER.LAMBDA_GP
         self.lambda_pixel = cfg.SOLVER.LAMBDA_PIXEL
         self.n_critic = cfg.SOLVER.N_CRITIC
-        self.luts_name_prefix = 'luts_unpaired'
-        self.cls_name_prefix = 'classifier_unpaired'
 
         self.discriminator = Discriminator(device=cfg.MODEL.DEVICE)
         self.discriminator.apply(weights_init_normal_classifier)

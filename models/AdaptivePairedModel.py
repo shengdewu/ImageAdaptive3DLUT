@@ -18,8 +18,6 @@ class AdaptivePairedModel:
         self.device = cfg.MODEL.DEVICE
         self.lambda_smooth = cfg.SOLVER.LAMBDA_SMOOTH
         self.lambda_monotonicity = cfg.SOLVER.LAMBDA_MONOTONICITY
-        self.luts_name_prefix = 'luts_paired'
-        self.cls_name_prefix = 'classifier_paired'
 
         self.lut0 = Generator_3DLUT_identity(cfg.MODEL.LUT.DIMS, cfg.MODEL.DEVICE)
         self.lut1 = Generator_3DLUT_n_zero(cfg.MODEL.LUT.DIMS, cfg.MODEL.LUT.SUPPLEMENT_NUMS, cfg.MODEL.DEVICE)
