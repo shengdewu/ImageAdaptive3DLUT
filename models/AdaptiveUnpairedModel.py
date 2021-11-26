@@ -7,6 +7,7 @@ from models.AdaptivePairedModel import AdaptivePairedModel
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
+from models.functional import get_model_state_dict, load_model_state_dict
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -102,15 +103,15 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
 
     def get_addition_state_dict(self):
         addition = dict()
-        addition['dis'] = self.__get_model_state_dict(self.discriminator)
-        addition['opt_g'] = self.__get_model_state_dict(self.optimizer_G)
-        addition['opt_d'] = self.__get_model_state_dict(self.optimizer_D)
+        addition['dis'] = get_model_state_dict(self.discriminator)
+        addition['opt_g'] = get_model_state_dict(self.optimizer_G)
+        addition['opt_d'] = get_model_state_dict(self.optimizer_D)
         return addition
 
     def load_addition_state_dict(self, state_dict: dict):
-        self.__load_model_state_dict(self.optimizer_G, state_dict['opt_g'])
-        self.__load_model_state_dict(self.optimizer_D, state_dict['opt_d'])
-        self.__load_model_state_dict(self.discriminator, state_dict['dis'])
+        load_model_state_dict(self.optimizer_G, state_dict['opt_g'])
+        load_model_state_dict(self.optimizer_D, state_dict['opt_d'])
+        load_model_state_dict(self.discriminator, state_dict['dis'])
         return
 
     def enable_distribute(self, cfg):

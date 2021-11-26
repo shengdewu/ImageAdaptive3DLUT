@@ -49,3 +49,16 @@ def compute_gradient_penalty(D: torch.nn.Module, real_samples, fake_samples, dev
     gradients = gradients.view(gradients.size(0), -1)
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
     return gradient_penalty
+
+
+def get_model_state_dict(model):
+    if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
+        return model.module.state_dict()
+    return model.state_dict()
+
+
+def load_model_state_dict(model, state_dict):
+    if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
+        model.module.load_state_dict(state_dict)
+    else:
+        model.load_state_dict(state_dict)

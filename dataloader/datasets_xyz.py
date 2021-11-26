@@ -8,10 +8,12 @@ from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
 import dataloader.torchvision_x_functional as TF_x
+from dataloader import DATASET_ARCH_REGISTRY
 
 
+@DATASET_ARCH_REGISTRY.register()
 class ImageDataset_XYZ(Dataset):
-    def __init__(self, root, mode="train", combined=True):
+    def __init__(self, root, mode="train"):
         self.mode = mode
 
         file = open(os.path.join(root, 'train_input.txt'), 'r')
@@ -38,9 +40,8 @@ class ImageDataset_XYZ(Dataset):
             self.test_input_files.append(os.path.join(root, "input", "PNG/480p_16bits_XYZ_WB", test_input_files[i][:-1] + ".png"))
             self.test_expert_files.append(os.path.join(root, "expertC", "JPG/480p", test_input_files[i][:-1] + ".jpg"))
 
-        if combined:
-            self.set1_input_files = self.set1_input_files + self.set2_input_files
-            self.set1_expert_files = self.set1_expert_files + self.set2_expert_files
+        self.set1_input_files = self.set1_input_files + self.set2_input_files
+        self.set1_expert_files = self.set1_expert_files + self.set2_expert_files
         return
 
     def __getitem__(self, index):
@@ -88,10 +89,10 @@ class ImageDataset_XYZ(Dataset):
             return len(self.test_input_files)
 
 
+@DATASET_ARCH_REGISTRY.register()
 class ImageDataset_XYZ_unpaired(Dataset):
-    def __init__(self, root, mode="train", unpaird_data="fiveK"):
+    def __init__(self, root, mode="train"):
         self.mode = mode
-        self.unpaird_data = unpaird_data
 
         file = open(os.path.join(root, 'train_input.txt'), 'r')
         set1_input_files = sorted(file.readlines())

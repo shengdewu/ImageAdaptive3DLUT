@@ -1,19 +1,18 @@
 import random
 import os
 import numpy as np
-import cv2
 
 from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
-import dataloader.datasets_xyz as TF_x
+from dataloader import DATASET_ARCH_REGISTRY
 
 
+@DATASET_ARCH_REGISTRY.register()
 class ImageDataset_sRGB(Dataset):
-    def __init__(self, root, mode="train", unpaird_data="fiveK", combined=True):
+    def __init__(self, root, mode="train"):
         self.mode = mode
-        self.unpaird_data = unpaird_data
 
         file = open(os.path.join(root, 'train_input.txt'), 'r')
         set1_input_files = sorted(file.readlines())
@@ -39,9 +38,8 @@ class ImageDataset_sRGB(Dataset):
             self.test_input_files.append(os.path.join(root, "input", "JPG/480p", test_input_files[i][:-1] + ".jpg"))
             self.test_expert_files.append(os.path.join(root, "expertC", "JPG/480p", test_input_files[i][:-1] + ".jpg"))
 
-        if combined:
-            self.set1_input_files = self.set1_input_files + self.set2_input_files
-            self.set1_expert_files = self.set1_expert_files + self.set2_expert_files
+        self.set1_input_files = self.set1_input_files + self.set2_input_files
+        self.set1_expert_files = self.set1_expert_files + self.set2_expert_files
 
     def __getitem__(self, index):
 
@@ -90,10 +88,10 @@ class ImageDataset_sRGB(Dataset):
             return len(self.test_input_files)
 
 
+@DATASET_ARCH_REGISTRY.register()
 class ImageDataset_sRGB_unpaired(Dataset):
-    def __init__(self, root, mode="train", unpaird_data="fiveK"):
+    def __init__(self, root, mode="train"):
         self.mode = mode
-        self.unpaird_data = unpaird_data
 
         file = open(os.path.join(root, 'train_input.txt'), 'r')
         set1_input_files = sorted(file.readlines())

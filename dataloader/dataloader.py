@@ -1,6 +1,5 @@
 import torch.utils.data
-from dataloader.datasets_rgb import ImageDataset_sRGB, ImageDataset_sRGB_unpaired
-from dataloader.datasets_xyz import ImageDataset_XYZ, ImageDataset_XYZ_unpaired
+from dataloader import build_dataset
 from engine.samplers.distributed_sampler import TrainingSampler
 from engine.data.common import ToIterableDataset
 import multiprocessing
@@ -75,25 +74,8 @@ class DataLoader:
 
     @staticmethod
     def create_dataset(cfg):
-        if cfg.INPUT.COLOR_SPACE == 'sRGB':
-            if cfg.INPUT.UNPAIRED:
-                train_dataset = ImageDataset_sRGB_unpaired(cfg.DATALOADER.ROOT_PAT, mode="train")
-                test_dataset = ImageDataset_sRGB_unpaired(cfg.DATALOADER.ROOT_PAT, mode="test")
-            else:
-                train_dataset = ImageDataset_sRGB(cfg.DATALOADER.ROOT_PAT, mode="train")
-                test_dataset = ImageDataset_sRGB(cfg.DATALOADER.ROOT_PAT, mode="test")
-
-        elif cfg.INPUT.COLOR_SPACE == 'XYZ':
-
-            if cfg.INPUT.UNPAIRED:
-                train_dataset = ImageDataset_XYZ_unpaired(cfg.DATALOADER.ROOT_PAT, mode="train")
-                test_dataset = ImageDataset_XYZ_unpaired(cfg.DATALOADER.ROOT_PAT, mode="test")
-            else:
-                train_dataset = ImageDataset_XYZ(cfg.DATALOADER.ROOT_PAT, mode="train")
-                test_dataset = ImageDataset_XYZ(cfg.DATALOADER.ROOT_PAT, mode="test")
-
-        else:
-            raise NotImplemented(cfg.INPUT.COLOR_SPACE)
+        train_dataset = build_dataset(cfg, model='train')
+        test_dataset = build_dataset(cfg, model='test')
         return train_dataset, test_dataset
 
     @staticmethod

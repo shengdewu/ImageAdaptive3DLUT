@@ -8,10 +8,12 @@ from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
 import dataloader.datasets_xyz as TF_x
+from dataloader import DATASET_ARCH_REGISTRY
 
 
+@DATASET_ARCH_REGISTRY.register()
 class ImageDataset_HDRplus(Dataset):
-    def __init__(self, root, mode="train", combined=True):
+    def __init__(self, root, mode="train"):
         self.mode = mode
 
         file = open(os.path.join(root, 'train.txt'), 'r')
@@ -82,6 +84,7 @@ class ImageDataset_HDRplus(Dataset):
             return len(self.test_input_files)
 
 
+@DATASET_ARCH_REGISTRY.register()
 class ImageDataset_HDRplus_unpaired(Dataset):
     def __init__(self, root, mode="train"):
         self.mode = mode

@@ -8,6 +8,7 @@ from models.classifier import build_classifier
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
+from models.functional import get_model_state_dict, load_model_state_dict
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -94,39 +95,26 @@ class AdaptivePairedModel:
         self.classifier.eval()
         return
 
-    @staticmethod
-    def __get_model_state_dict(model):
-        if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
-            return model.module.state_dict()
-        return model.state_dict()
-
-    @staticmethod
-    def __load_model_state_dict(model, state_dict):
-        if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
-            model.module.load_state_dict(state_dict)
-        else:
-            model.load_state_dict(state_dict)
-
     def get_state_dict(self):
         models = dict()
-        models['lut'] = {0: self.__get_model_state_dict(self.lut0)}
+        models['lut'] = {0: get_model_state_dict(self.lut0)}
         models['lut'].update(self.lut1.state_dict(offset=1))
-        models['cls'] = self.__get_model_state_dict(self.classifier)
+        models['cls'] = get_model_state_dict(self.classifier)
         return models
 
     def load_state_dict(self, state_dict: dict):
-        self.__load_model_state_dict(self.lut0, state_dict['lut'][0])
+        load_model_state_dict(self.lut0, state_dict['lut'][0])
         self.lut1.load_state_dict(state_dict['lut'], offset=1)
-        self.__load_model_state_dict(self.classifier, state_dict['cls'])
+        load_model_state_dict(self.classifier, state_dict['cls'])
         return
 
     def get_addition_state_dict(self):
         addition = dict()
-        addition['opt_g'] = self.__get_model_state_dict(self.optimizer_G)
+        addition['opt_g'] = get_model_state_dict(self.optimizer_G)
         return addition
 
     def load_addition_state_dict(self, state_dict: dict):
-        self.__load_model_state_dict(self.optimizer_G, state_dict['opt_g'])
+        load_model_state_dict(self.optimizer_G, state_dict['opt_g'])
         return
 
     def enable_distribute(self, cfg):

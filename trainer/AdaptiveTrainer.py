@@ -19,6 +19,8 @@ class AdaptiveTrainer:
         self.model.enable_train()
 
         train_dataset, test_dataset = DataLoader.create_dataset(cfg)
+        logging.getLogger(__name__).info('load {} train data, load {} test data'.format(len(train_dataset), len(test_dataset)))
+
         if cfg.MODEL.TRAINER.TYPE == 1 and cfg.MODEL.TRAINER.GPU_ID >= 0:
             self.dataloader = DataLoader.create_distribute_sampler_dataloder(train_dataset,
                                                                              cfg.SOLVER.IMS_PER_BATCH,

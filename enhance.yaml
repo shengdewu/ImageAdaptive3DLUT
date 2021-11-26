@@ -17,22 +17,19 @@ SOLVER:
 MODEL:
   WEIGHTS: ""
   DEVICE: "cuda"
-  ARCH: "AdaptivePairedModel"
+  ARCH: "AdaptiveUnPairedModel"
   LUT:
     SUPPLEMENT_NUMS: 2
     DIMS: 33
   CLASSIFIER:
     PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet152-394f9c45.pth"
-    ARCH: "Classifier"
+    ARCH: "ClassifierUnpaired"
     RESNET_ARCH: "resnet152"
-
-INPUT:
-  COLOR_SPACE: "sRGB"  #srgb xyz
-  UNPAIRED: false
 
 DATALOADER:
   NUM_WORKERS: 2
-  ROOT_PAT: "/mnt/data/shengdewu-share/image.enhancement/enlighten.image/fiveK"
+  ROOT_PAT: "/mnt/data/data.set/xintu.data/image.enhance.540"
+  DATASET: "ImageDatasetXinTuUnpaired"
 
 OUTPUT_DIR: "/mnt/data/train.output/imagelut.test"
 

@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import os
+from models.functional import get_model_state_dict, load_model_state_dict
 from .lut_abc import LutAbc
 from trilinear.TrilinearInterpolationModel import TrilinearInterpolationModel
 
@@ -83,12 +83,12 @@ class Generator_3DLUT_n_zero:
     def state_dict(self, offset=0):
         state_dict = dict()
         for i, lut in self.generator_3d_lut.items():
-            state_dict[i+offset] = self.__get_model_state_dict(lut)
+            state_dict[i+offset] = get_model_state_dict(lut)
         return state_dict
 
     def load_state_dict(self, state_dict:dict, offset=1):
         for i, lut in self.generator_3d_lut.items():
-            self.__load_model_state_dict(lut, state_dict[i+offset])
+            load_model_state_dict(lut, state_dict[i+offset])
         return
 
     def enable_parallel(self):

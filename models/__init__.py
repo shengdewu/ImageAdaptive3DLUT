@@ -1,5 +1,4 @@
 from fvcore.common.registry import Registry  # for backward compatibility.
-import logging
 
 MODEL_ARCH_REGISTRY = Registry("MODEL")
 MODEL_ARCH_REGISTRY.__doc__ = """

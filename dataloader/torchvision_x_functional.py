@@ -559,3 +559,29 @@ def bbox_pad(bboxes, padding):
     pad_bboxes[..., 1::2] = bboxes[..., 1::2] + pad_top
 
     return pad_bboxes
+
+
+def get_crop_params(img: np.ndarray, output_size: (int, int)) -> (int, int, int, int):
+    """Get parameters for ``crop`` for a random crop.
+
+    Args:
+        img (numpy): Image to be cropped.
+        output_size (tuple): Expected output size of the crop. (h, w)
+
+    Returns:
+        tuple: params (i, j, h, w) to be passed to ``crop`` for random crop.
+    """
+    w, h = img.shape[1], img.shape[0]
+    th, tw = output_size
+
+    if h + 1 < th or w + 1 < tw:
+        raise ValueError(
+            "Required crop size {} is larger then input image size {}".format((th, tw), (h, w))
+        )
+
+    if w == tw and h == th:
+        return 0, 0, h, w
+
+    i = torch.randint(0, h - th + 1, size=(1, )).item()
+    j = torch.randint(0, w - tw + 1, size=(1, )).item()
+    return i, j, th, tw
