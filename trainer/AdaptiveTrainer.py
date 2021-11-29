@@ -47,6 +47,7 @@ class AdaptiveTrainer:
         self.model_path = cfg.MODEL.WEIGHTS
         self.iter_train_loader = iter(self.dataloader)
         self.output = cfg.OUTPUT_DIR
+        logging.getLogger(__name__).info('ready for training : there are {} data in one epoch and actually trained for {} epoch'.format(len(train_dataset) / cfg.SOLVER.IMS_PER_BATCH, self.max_iter / (len(train_dataset) / cfg.SOLVER.IMS_PER_BATCH)))
         return
 
     def loop(self):
