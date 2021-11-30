@@ -57,6 +57,8 @@ class AdaptiveTrainer:
         total_cnt = 0
         loss_avg = dict()
         for iter_num in range(self.start_iter, self.max_iter):
+            self.model.enable_train()
+
             for idx, data in enumerate(self.dataloader):
                 epoch = iter_num * self.total_data_per_epoch + idx
 
