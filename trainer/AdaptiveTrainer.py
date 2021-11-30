@@ -45,9 +45,9 @@ class AdaptiveTrainer:
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
         self.model_path = cfg.MODEL.WEIGHTS
-        self.iter_train_loader = iter(self.dataloader)
         self.output = cfg.OUTPUT_DIR
-        logging.getLogger(__name__).info('ready for training : there are {} data in one epoch and actually trained for {} epoch'.format(len(train_dataset) / cfg.SOLVER.IMS_PER_BATCH, self.max_iter / (len(train_dataset) / cfg.SOLVER.IMS_PER_BATCH)))
+        self.total_data_per_epoch = len(train_dataset) / cfg.SOLVER.IMS_PER_BATCH
+        logging.getLogger(__name__).info('ready for training : there are {} data in one epoch and actually trained for {} epoch'.format(self.total_data_per_epoch, self.max_iter / self.total_data_per_epoch))
         return
 
     def loop(self):
@@ -56,18 +56,20 @@ class AdaptiveTrainer:
 
         total_cnt = 0
         loss_avg = dict()
-        for epoch in range(self.start_iter, self.max_iter):
-            data = next(self.iter_train_loader)
-            gt = data['A_exptC'] if 'B_exptC' not in data.keys() else data['B_exptC']
-            loss = self.model(data['A_input'], gt, epoch)
+        for iter_num in range(self.start_iter, self.max_iter):
+            for idx, data in enumerate(self.dataloader):
+                epoch = iter_num * self.total_data_per_epoch + idx
 
-            total_cnt += 1.0
-            for k, v in loss.items():
-                loss_avg[k] = loss_avg.get(k, 0) + v
+                gt = data['A_exptC'] if 'B_exptC' not in data.keys() else data['B_exptC']
+                loss = self.model(data['A_input'], gt, epoch)
 
-            addtion = self.model.get_addition_state_dict()
-            self.checkpoint.save(epoch, self.model.get_state_dict(), **addtion)
-            self.run_after(epoch, loss_avg, total_cnt)
+                total_cnt += 1.0
+                for k, v in loss.items():
+                    loss_avg[k] = loss_avg.get(k, 0) + v
+
+                addtion = self.model.get_addition_state_dict()
+                self.checkpoint.save(epoch, self.model.get_state_dict(), **addtion)
+                self.run_after(epoch, loss_avg, total_cnt)
 
         addtion = self.model.get_addition_state_dict()
         self.checkpoint.save(self.max_iter, self.model.get_state_dict(), **addtion)
