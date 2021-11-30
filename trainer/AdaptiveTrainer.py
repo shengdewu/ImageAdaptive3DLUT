@@ -30,7 +30,7 @@ class AdaptiveTrainer:
         else:
             self.dataloader = DataLoader.create_sampler_dataloader(train_dataset, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_WORKERS)
 
-        self.test_dataloader = DataLoader.create_dataloader(test_dataset)
+        self.test_dataloader = DataLoader.create_sampler_dataloader(test_dataset)
 
         self.model.enable_distribute(cfg)
 

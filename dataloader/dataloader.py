@@ -78,22 +78,44 @@ class DataLoader:
         test_dataset = build_dataset(cfg, model='test')
         return train_dataset, test_dataset
 
+
     @staticmethod
-    def create_dataloader(dataset, num_workers=1, batch_size=1):
+    def create_sampler_dataloader(dataset, batch_size=1, num_workers=1):
+        sampler = torch.utils.data.RandomSampler(dataset)
+
         max_workers = multiprocessing.cpu_count()
         num_workers = num_workers if num_workers < max_workers else max_workers
+
         return torch.utils.data.DataLoader(
-            dataset,
-            batch_size=batch_size,
-            shuffle=True,
-            num_workers=num_workers,
-            collate_fn=DataLoader.collate_fn
-        )
+                                    dataset=dataset,
+                                    batch_size=batch_size,
+                                    shuffle=False,
+                                    num_workers=num_workers,
+                                    pin_memory=True,
+                                    collate_fn=DataLoader.collate_fn,
+                                    drop_last=True,
+                                    sampler=sampler)
 
     @staticmethod
-    def create_sampler_dataloader(dataset, batch_size, num_workers):
-        sampler = TrainingSampler(len(dataset))
+    def create_distribute_sampler_dataloder(dataset, batch_size, rank, world_size, num_workers):
+        sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size, rank=rank)
 
+        max_workers = multiprocessing.cpu_count()
+        num_workers = num_workers if num_workers < max_workers else max_workers
+
+        return torch.utils.data.DataLoader(
+                                    dataset=dataset,
+                                    batch_size=batch_size,
+                                    shuffle=False,
+                                    num_workers=num_workers,
+                                    pin_memory=True,
+                                    collate_fn=DataLoader.collate_fn,
+                                    drop_last=True,
+                                    sampler=sampler)
+
+    @staticmethod
+    def create_sampler_iterable_dataloader(dataset, batch_size, num_workers):
+        sampler = TrainingSampler(len(dataset))
         dataset = ToIterableDataset(dataset, sampler)
 
         max_workers = multiprocessing.cpu_count()
@@ -109,9 +131,8 @@ class DataLoader:
                                     drop_last=True)
 
     @staticmethod
-    def create_distribute_sampler_dataloder(dataset, batch_size, rank, world_size, num_workers):
+    def create_distribute_sampler_iterable_dataloder(dataset, batch_size, rank, world_size, num_workers):
         sampler = TrainingSampler(len(dataset), rank=rank, world_size=world_size)
-
         dataset = ToIterableDataset(dataset, sampler)
 
         max_workers = multiprocessing.cpu_count()

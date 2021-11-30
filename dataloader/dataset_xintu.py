@@ -242,8 +242,7 @@ class ImageDatasetXinTuUnpaired(Dataset):
             return len(self.test_input_files)
 
 
-if __name__ == '__main__':
-
+def process_label():
     with open('/mnt/data/data.set/fiveK.data/train_input.txt') as tt:
         tinput = tt.readlines()
     with open('/mnt/data/data.set/fiveK.data/train_label.txt') as lt:
