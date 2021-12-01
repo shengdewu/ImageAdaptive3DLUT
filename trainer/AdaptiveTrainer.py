@@ -26,9 +26,10 @@ class AdaptiveTrainer:
                                                                              cfg.SOLVER.IMS_PER_BATCH,
                                                                              cfg.MODEL.TRAINER.GLOBAL_RANK,
                                                                              cfg.MODEL.TRAINER.WORLD_SIZE,
-                                                                             cfg.DATALOADER.NUM_WORKERS)
+                                                                             cfg.DATALOADER.NUM_WORKERS,
+                                                                             default_log_name=cfg.OUTPUT_LOG_NAME)
         else:
-            self.dataloader = DataLoader.create_sampler_dataloader(train_dataset, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_WORKERS)
+            self.dataloader = DataLoader.create_sampler_dataloader(train_dataset, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_WORKERS, default_log_name=cfg.OUTPUT_LOG_NAME)
 
         self.test_dataloader = DataLoader.create_sampler_dataloader(test_dataset)
 
