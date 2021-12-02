@@ -22,14 +22,14 @@ class AdaptiveTrainer:
         logging.getLogger(__name__).info('create dataset {}  then load {} train data, load {} test data'.format(cfg.DATALOADER.DATASET, len(train_dataset), len(test_dataset)))
 
         if cfg.MODEL.TRAINER.TYPE == 1 and cfg.MODEL.TRAINER.GPU_ID >= 0:
-            self.dataloader = DataLoader.create_distribute_sampler_dataloder(train_dataset,
+            self.dataloader = DataLoader.create_distribute_sampler_iterable_dataloder(train_dataset,
                                                                              cfg.SOLVER.IMS_PER_BATCH,
                                                                              cfg.MODEL.TRAINER.GLOBAL_RANK,
                                                                              cfg.MODEL.TRAINER.WORLD_SIZE,
                                                                              cfg.DATALOADER.NUM_WORKERS,
                                                                              default_log_name=cfg.OUTPUT_LOG_NAME)
         else:
-            self.dataloader = DataLoader.create_sampler_dataloader(train_dataset, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_WORKERS, default_log_name=cfg.OUTPUT_LOG_NAME)
+            self.dataloader = DataLoader.create_sampler_iterable_dataloader(train_dataset, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_WORKERS, default_log_name=cfg.OUTPUT_LOG_NAME)
 
         self.test_dataloader = DataLoader.create_sampler_dataloader(test_dataset)
 
@@ -48,6 +48,7 @@ class AdaptiveTrainer:
         self.model_path = cfg.MODEL.WEIGHTS
         self.output = cfg.OUTPUT_DIR
         self.total_data_per_epoch = len(train_dataset) / cfg.SOLVER.IMS_PER_BATCH
+        self.iter_train_loader = iter(self.dataloader)
         logging.getLogger(__name__).info('ready for training : there are {} data in one epoch and actually trained for {} epoch'.format(self.total_data_per_epoch, self.max_iter / self.total_data_per_epoch))
         return
 
@@ -55,24 +56,23 @@ class AdaptiveTrainer:
         psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device)
         logging.getLogger(__name__).info('before train psnr = {}'.format(psnr))
 
+        self.model.enable_train()
+
         total_cnt = 0
         loss_avg = dict()
-        for iter_num in range(self.start_iter, self.max_iter):
-            self.model.enable_train()
+        for epoch in range(self.start_iter, self.max_iter):
+            data = next(self.iter_train_loader)
 
-            for idx, data in enumerate(self.dataloader):
-                epoch = iter_num * self.total_data_per_epoch + idx
+            gt = data['A_exptC'] if 'B_exptC' not in data.keys() else data['B_exptC']
+            loss = self.model(data['A_input'], gt, epoch)
 
-                gt = data['A_exptC'] if 'B_exptC' not in data.keys() else data['B_exptC']
-                loss = self.model(data['A_input'], gt, epoch)
+            total_cnt += 1.0
+            for k, v in loss.items():
+                loss_avg[k] = loss_avg.get(k, 0) + v
 
-                total_cnt += 1.0
-                for k, v in loss.items():
-                    loss_avg[k] = loss_avg.get(k, 0) + v
-
-                addtion = self.model.get_addition_state_dict()
-                self.checkpoint.save(epoch, self.model.get_state_dict(), **addtion)
-                self.run_after(epoch, loss_avg, total_cnt)
+            addtion = self.model.get_addition_state_dict()
+            self.checkpoint.save(epoch, self.model.get_state_dict(), **addtion)
+            self.run_after(epoch, loss_avg, total_cnt)
 
         addtion = self.model.get_addition_state_dict()
         self.checkpoint.save(self.max_iter, self.model.get_state_dict(), **addtion)
