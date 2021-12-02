@@ -83,7 +83,7 @@ class AdaptiveTrainer:
         return
 
     def run_after(self, epoch, loss_avg, total_cnt):
-        if epoch % self.checkpoint.check_period == 0:
+        if int(epoch+0.5) % self.checkpoint.check_period == 0:
             loss_str = ''
             for k, v in loss_avg.items():
                 if len(loss_str) > 0:
