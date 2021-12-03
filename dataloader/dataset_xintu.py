@@ -15,15 +15,21 @@ class ImageDatasetXinTu(Dataset):
     def __init__(self, root, mode="train"):
         self.mode = mode
 
-        self.set1_input_files, self.set1_expert_files = ImageDatasetXinTu.search_files(root, 'train_input.txt')
-        self.set2_input_files, self.set2_expert_files = ImageDatasetXinTu.search_files(root, 'train_label.txt')
-        self.test_input_files, self.test_expert_files = ImageDatasetXinTu.search_files(root, 'test.txt')
+        self.skip_name = list()
+        if os.path.exists(os.path.join(root, 'skip.txt')):
+            file = open(os.path.join(root, 'skip.txt'), 'r')
+            self.skip_name = [name.strip('\n') for name in file.readlines()]
+            file.close()
+
+        self.set1_input_files, self.set1_expert_files = ImageDatasetXinTu.search_files(root, 'train_input.txt', self.skip_name)
+        self.set2_input_files, self.set2_expert_files = ImageDatasetXinTu.search_files(root, 'train_label.txt', self.skip_name)
+        self.test_input_files, self.test_expert_files = ImageDatasetXinTu.search_files(root, 'test.txt', self.skip_name)
 
         self.set1_input_files = self.set1_input_files + self.set2_input_files
         self.set1_expert_files = self.set1_expert_files + self.set2_expert_files
 
     @staticmethod
-    def search_files(root, txt):
+    def search_files(root, txt, skip_name):
         file = open(os.path.join(root, txt), 'r')
         sorted_input_files = sorted([name.strip('\n') for name in file.readlines() if name.find('input,gt') == -1])
         file.close()
@@ -32,6 +38,8 @@ class ImageDatasetXinTu(Dataset):
         for name in sorted_input_files:
             name = name.split(',')
             assert len(name) == 2
+            if name[0] in skip_name or name[1] in skip_name:
+                continue
             b_input = os.path.join(root, "rt_tif_16bit_540p", name[0])
             b_expert = os.path.join(root, "gt_16bit_540p", name[1])
             if not os.path.exists(b_input) or not os.path.exists(b_expert):
@@ -55,6 +63,13 @@ class ImageDatasetXinTu(Dataset):
     #         img_exptC = cv2.cvtColor(img_exptC, cv2.COLOR_BGR2RGB)
     #
     #     if self.mode == "train":
+    #
+    #         W = min(img_input.shape[1], img_exptC.shape[1])
+    #         H = min(img_input.shape[0], img_exptC.shape[0])
+    #         if img_input.shape[:2] != (H, W):
+    #             img_input = img_input[0:H, 0:W, :]
+    #         if img_exptC.shape[:2] != (H, W):
+    #             img_exptC = img_exptC[0:H, 0:W, :]
     #
     #         ratio_H = np.random.uniform(0.6, 1.0)
     #         ratio_W = np.random.uniform(0.6, 1.0)
@@ -135,6 +150,12 @@ class ImageDatasetXinTuUnpaired(Dataset):
     def __init__(self, root, mode="train"):
         self.mode = mode
 
+        self.skip_name = list()
+        if os.path.exists(os.path.join(root, 'skip.txt')):
+            file = open(os.path.join(root, 'skip.txt'), 'r')
+            self.skip_name = [name.strip('\n') for name in file.readlines()]
+            file.close()
+
         self.set1_input_files, self.set1_expert_files = ImageDatasetXinTuUnpaired.search_files(root, 'train_input.txt')
         self.set2_input_files, self.set2_expert_files = ImageDatasetXinTuUnpaired.search_files(root, 'train_label.txt')
         self.test_input_files, self.test_expert_files = ImageDatasetXinTuUnpaired.search_files(root, 'test.txt')
@@ -178,6 +199,13 @@ class ImageDatasetXinTuUnpaired(Dataset):
     #         img2 = img_exptC
     #
     #     if self.mode == "train":
+    #         W = min(img_input.shape[1], img_exptC.shape[1])
+    #         H = min(img_input.shape[0], img_exptC.shape[0])
+    #         if img_input.shape[:2] != (H, W):
+    #             img_input = img_input[0:H, 0:W, :]
+    #         if img_exptC.shape[:2] != (H, W):
+    #             img_exptC = img_exptC[0:H, 0:W, :]
+
     #         ratio_H = np.random.uniform(0.6, 1.0)
     #         ratio_W = np.random.uniform(0.6, 1.0)
     #         W, H = img_input.shape[1], img_input.shape[0]
@@ -299,7 +327,7 @@ def singal_preprocess(data_path, out_path, txt):
             W, H = a_input_img.size
             W2, H2 = a_expert_img.size
 
-            if abs(W - W2) > 10 or abs(H - H2) > 10:
+            if abs(W - W2) > 2 or abs(H - H2) > 2:
                 continue
 
             min_w = max(W, W2)
@@ -325,6 +353,45 @@ def preprocess(data_path, out_path):
     singal_preprocess(data_path, out_path, 'train_input.txt')
     singal_preprocess(data_path, out_path, 'train_label.txt')
     singal_preprocess(data_path, out_path, 'test.txt')
+
+
+def singal_match(data_path, txt):
+    file = open(os.path.join(data_path, txt), 'r')
+    input_files = sorted([name.strip('\n') for name in file.readlines() if name.find('input,gt') == -1])
+    file.close()
+
+    skip_names = list()
+    for name in input_files:
+        name = name.split(',')
+        assert len(name) == 2
+        a_input = os.path.join(data_path, "rt_tif_16bit_540p", name[0])
+        a_expert = os.path.join(data_path, "gt_16bit_540p", name[1])
+        if not os.path.exists(a_input) or not os.path.exists(a_expert):
+            continue
+
+        a_input_img = Image.open(a_input)
+        a_expert_img = Image.open(a_expert)
+
+        W, H = a_input_img.size
+        W2, H2 = a_expert_img.size
+
+        if abs(W - W2) < 2 and abs(H - H2) < 2:
+            continue
+
+        skip_names.append(name[0])
+        skip_names.append(name[1])
+
+    print('total select {}'.format(len(skip_names)))
+    if len(skip_names) > 0:
+        with open(os.path.join(data_path, 'skip.txt'), mode='a+') as w:
+            for skip_name in set(skip_names):
+                w.write('{}\n'.format(skip_name))
+
+
+def match(data_path):
+    singal_match(data_path, 'train_input.txt')
+    singal_match(data_path, 'train_label.txt')
+    singal_match(data_path, 'test.txt')
 
 
 def process_label():

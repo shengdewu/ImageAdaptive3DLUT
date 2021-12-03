@@ -51,7 +51,7 @@ class BaseScheduler(ABC):
                 cfg.MODEL.TRAINER.GLOBAL_RANK = 0
                 cfg.MODEL.TRAINER.WORLD_SIZE = 1
                 cfg.MODEL.TRAINER.NUM_PER_GPUS = 1
-                cfg.MODEL.DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+                cfg.MODEL.DEVICE = 'cuda' if torch.cuda.is_available() and args.num_gpus > 0 else 'cpu'
 
         cfg.freeze()
 

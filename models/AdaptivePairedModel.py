@@ -39,8 +39,8 @@ class AdaptivePairedModel:
         return
 
     def __call__(self, x, gt, epoch=None):
-        real_A = x.to(self.device)
-        real_B = gt.to(self.device)
+        real_A = x.to(self.device, non_blocking=True)
+        real_B = gt.to(self.device, non_blocking=True)
 
         self.optimizer_G.zero_grad()
 
