@@ -11,8 +11,8 @@ class TrilinearInterpolationFunction(torch.autograd.Function):
         dim = lut.size()[-1]
         shift = dim ** 3
         binsize = 1.000001 / (dim - 1)
-        W = x.size(2)
-        H = x.size(3)
+        H = x.size(2)
+        W = x.size(3)
         batch = x.size(0)
 
         assert 1 == trilinear.forward(lut,

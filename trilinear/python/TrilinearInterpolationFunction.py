@@ -14,13 +14,14 @@ class TrilinearInterpolationFunction(torch.autograd.Function):
         """
         c, dim, dim1, dim2 = lut.size()
         bat, c, h, w = x.size()
-        assert bat == 1 and dim == dim1 and dim == dim2
+        assert dim == dim1 and dim == dim2
 
         bins = 1.000001 / (dim - 1) #不采取整数的原因时防止当图像数据=1时越界（eg index = 1.0 * 32, left = index + 1 > 32
 
         output = np.zeros_like(x)
         x_numpy = x.numpy()
-        trilinear_forward(x_numpy, lut.numpy(), output, w, h, bins)
+        for b in range(bat):
+            trilinear_forward(x_numpy[b], lut.numpy(), output[b], w, h, bins)
 
         int_package = torch.IntTensor([dim, w, h, bat])
         float_package = torch.FloatTensor([bins])
@@ -38,6 +39,9 @@ class TrilinearInterpolationFunction(torch.autograd.Function):
         bins = float(float_package[0])
 
         lut_grad_numpy = lut_grad.numpy()
-        trilinear_backword(x.numpy(), x_grad.numpy(), lut_grad_numpy, h, w, bins)
+        x_numpy = x.numpy()
+        x_grad_numpy = x_grad.numpy()
+        for b in range(bat):
+            trilinear_backword(x_numpy[b], x_grad_numpy[b], lut_grad_numpy, h, w, bins)
 
         return torch.from_numpy(lut_grad_numpy), x_grad
