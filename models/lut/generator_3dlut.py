@@ -24,13 +24,13 @@ class Generator_3DLUT_identity(LutAbc):
     @staticmethod
     def generate_identity_lut(dim):
         lut3d = np.zeros((3, dim, dim, dim), dtype=np.float32)
-        step = np.float32(1.0 / float(dim))
-        for r in range(dim):
+        step = 1.0 / float(dim-1)
+        for b in range(dim):
             for g in range(dim):
-                for b in range(dim):
-                    lut3d[0, r, g, b] = step * r
-                    lut3d[1, r, g, b] = step * g
-                    lut3d[2, r, g, b] = step * b
+                for r in range(dim):
+                    lut3d[0, b, g, r] = step * r
+                    lut3d[1, b, g, r] = step * g
+                    lut3d[2, b, g, r] = step * b
         return lut3d
 
     def forward(self, x):

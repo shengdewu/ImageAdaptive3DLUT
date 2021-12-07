@@ -33,14 +33,14 @@ def trilinear_forward(x, lut, output, w, h, bins):
             w011 = (1 - rem_r) * rem_g * rem_b
             w111 = rem_r * rem_g * rem_b
 
-            id000 = int_ri, int_gi, int_bi
-            id100 = int_ri + 1, int_gi, int_bi
-            id010 = int_ri, int_gi + 1, int_bi
-            id110 = int_ri + 1, int_gi + 1, int_bi
-            id001 = int_ri, int_gi, int_bi + 1
-            id101 = int_ri + 1, int_gi, int_bi + 1
-            id011 = int_ri, int_gi + 1, int_bi + 1
-            id111 = int_ri + 1, int_gi + 1, int_bi + 1
+            id000 = int_bi, int_gi, int_ri
+            id100 = int_bi, int_gi, int_ri + 1
+            id010 = int_bi, int_gi + 1, int_ri
+            id110 = int_bi, int_gi + 1, int_ri + 1
+            id001 = int_bi + 1, int_gi, int_ri
+            id101 = int_bi + 1, int_gi, int_ri + 1
+            id011 = int_bi + 1, int_gi + 1, int_ri
+            id111 = int_bi + 1, int_gi + 1, int_ri + 1
 
             output[0, hi, wi] = w000 * lut[0][id000] + w100 * lut[0][id100] + w010 * lut[0][id010] + w110 * lut[0][id110] + \
                                 w001 * lut[0][id001] + w101 * lut[0][id101] + w011 * lut[0][id011] + w111 * lut[0][id111]
@@ -79,14 +79,14 @@ def trilinear_backword(x, x_grad, lut_grad, h, w, bins):
             w011 = (1 - rem_r) * rem_g * rem_b
             w111 = rem_r * rem_g * rem_b
 
-            id000 = int_ri, int_gi, int_bi
-            id100 = int_ri + 1, int_gi, int_bi
-            id010 = int_ri, int_gi + 1, int_bi
-            id110 = int_ri + 1, int_gi + 1, int_bi
-            id001 = int_ri, int_gi, int_bi + 1
-            id101 = int_ri + 1, int_gi, int_bi + 1
-            id011 = int_ri, int_gi + 1, int_bi + 1
-            id111 = int_ri + 1, int_gi + 1, int_bi + 1
+            id000 = int_bi, int_gi, int_ri
+            id100 = int_bi, int_gi, int_ri + 1
+            id010 = int_bi, int_gi + 1, int_ri
+            id110 = int_bi, int_gi + 1, int_ri + 1
+            id001 = int_bi + 1, int_gi, int_ri
+            id101 = int_bi + 1, int_gi, int_ri + 1
+            id011 = int_bi + 1, int_gi + 1, int_ri
+            id111 = int_bi + 1, int_gi + 1, int_ri + 1
 
             lut_grad[0][id000] += w000 * x_grad[0, hi, wi]
             lut_grad[0][id100] += w100 * x_grad[0, hi, wi]
