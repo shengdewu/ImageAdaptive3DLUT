@@ -7,6 +7,8 @@ from engine.log.logger import setup_logger
 import torch
 import math
 import torchvision
+import cv2
+import numpy as np
 
 
 class AdaptiveTrainer:
@@ -42,6 +44,7 @@ class AdaptiveTrainer:
                                               file_prefix=cfg.MODEL.ARCH,
                                               save_to_disk=comm.is_main_process())
 
+        self.unnormalizing_value = train_dataset.unnormalizing_value() if hasattr(train_dataset, 'unnormalizing_value') else 255
         self.device = cfg.MODEL.DEVICE
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
@@ -53,7 +56,7 @@ class AdaptiveTrainer:
         return
 
     def loop(self):
-        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device)
+        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device, unnormalizing_value=self.unnormalizing_value)
         logging.getLogger(__name__).info('before train psnr = {}'.format(psnr))
 
         self.model.enable_train()
@@ -77,9 +80,9 @@ class AdaptiveTrainer:
         addtion = self.model.get_addition_state_dict()
         self.checkpoint.save(self.max_iter, self.model.get_state_dict(), **addtion)
 
-        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device)
+        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device, unnormalizing_value=self.unnormalizing_value)
         logging.getLogger(__name__).info('after train psnr = {}'.format(psnr))
-        self.visualize_result(self.model, self.test_dataloader, self.device, self.output)
+        self.visualize_result(self.model, self.test_dataloader, self.device, self.output, unnormalizing_value=self.unnormalizing_value)
         return
 
     def run_after(self, epoch, loss_avg, total_cnt):
@@ -104,35 +107,46 @@ class AdaptiveTrainer:
 
     @staticmethod
     @torch.no_grad()
-    def calculate_psnr(trainer, dataloader, device):
+    def calculate_psnr(trainer, dataloader, device, unnormalizing_value=255):
         trainer.disable_train()
         avg_psnr = 0
         for i, batch in enumerate(dataloader):
             real_A = batch["A_input"].to(device)
             real_B = batch["A_exptC"].to(device)
             fake_B, weights_norm = trainer.generator(real_A)
-            fake_B = torch.round(fake_B * 255)
-            real_B = torch.round(real_B * 255)
+            fake_B = torch.round(fake_B * unnormalizing_value)
+            real_B = torch.round(real_B * unnormalizing_value)
             mse = AdaptiveTrainer.criterion_pixelwise(fake_B, real_B)
             mse = torch.clip(mse, 0.00000001, 4294967296.0)
-            psnr = 10 * math.log10(255.0 * 255.0 / mse.item())
+            psnr = 10.0 * math.log10(float(unnormalizing_value) * unnormalizing_value / mse.item())
             avg_psnr += psnr
 
         return avg_psnr / len(dataloader)
 
     @staticmethod
     @torch.no_grad()
-    def visualize_result(trainer, dataloader, device, save_path):
+    def visualize_result(trainer, dataloader, device, save_path, unnormalizing_value=255):
         trainer.disable_train()
+        format = 'jpg' if unnormalizing_value == 255 else 'tif'
         for i, batch in enumerate(dataloader):
             real_A = batch["A_input"].to(device)
             real_B = batch["A_exptC"].to(device)
             fake_B, weights_norm = trainer.generator(real_A)
             img_sample = torch.cat((real_A.data, fake_B.data, real_B.data), -1)
-            fake_B = torch.round(fake_B * 255)
-            real_B = torch.round(real_B * 255)
+            fake_B = torch.round(fake_B * unnormalizing_value)
+            real_B = torch.round(real_B * unnormalizing_value)
             mse = AdaptiveTrainer.criterion_pixelwise(fake_B, real_B)
             mse = torch.clip(mse, 0.00000001, 4294967296.0)
-            psnr = 10 * math.log10(255.0 * 255.0 / mse.item())
-            torchvision.utils.save_image(img_sample, '{}/{}-{}.jpg'.format(save_path, i, str(psnr)[:5]), nrow=1, normalize=False)
+            psnr = 10.0 * math.log10(float(unnormalizing_value) * unnormalizing_value / mse.item())
+            AdaptiveTrainer.save_image(img_sample, '{}/{}-{}.{}'.format(save_path, i, str(psnr)[:5], format), unnormalizing_value=unnormalizing_value, nrow=1, normalize=False)
+        return
+
+    @staticmethod
+    @torch.no_grad()
+    def save_image(tensor, fp, unnormalizing_value=255, **kwargs):
+        fmt = np.uint8 if unnormalizing_value == 255 else np.uint16
+        grid = torchvision.utils.make_grid(tensor, **kwargs)
+        # Add 0.5 after unnormalizing to [0, unnormalizing_value] to round to nearest integer
+        ndarr = grid.mul(unnormalizing_value).add_(0.5).clamp_(0, unnormalizing_value).permute(1, 2, 0).to('cpu').numpy().astype(fmt)
+        cv2.imwrite(fp, ndarr[:, :, ::-1])
         return

@@ -1,14 +1,14 @@
 
 SOLVER:
   BASE_LR: 0.0002
-  MAX_ITER: 50
-  CHECKPOINT_PERIOD: 2
-  MAX_KEEP: 5
-  IMS_PER_BATCH: 2
+  MAX_ITER: 4000000
+  CHECK_PERIOD: 5000
+  MAX_KEEP: 16
+  IMS_PER_BATCH: 1
   LAMBDA_GP: 10
   LAMBDA_PIXEL: 1000
-  LAMBDA_SMOOTH: 1e-4
-  LAMBDA_MONOTONICITY: 10.0
+  LAMBDA_SMOOTH: 1e-4  # 0 0.00001 0.0001 0.001 0.01 0.1
+  LAMBDA_MONOTONICITY: 10.0 # 0.1 0 1.0 10 100 1000
   N_CRITIC: 1
   ADAM:
     B1: 0.9
@@ -17,19 +17,20 @@ SOLVER:
 MODEL:
   WEIGHTS: ""
   DEVICE: "cuda"
-  ARCH: "AdaptiveUnPairedModel"
+  ARCH: "AdaptivePairedModel"
   LUT:
-    SUPPLEMENT_NUMS: 2
-    DIMS: 33
+    SUPPLEMENT_NUMS: 4
+    DIMS: 64
   CLASSIFIER:
-    PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet152-394f9c45.pth"
-    ARCH: "ClassifierUnpaired"
-    RESNET_ARCH: "resnet152"
+    PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet34-333f7ec4.pth"
+    ARCH: "Classifier"
+    RESNET_ARCH: "resnet34"
 
 DATALOADER:
-  NUM_WORKERS: 2
-  ROOT_PAT: "/mnt/data/data.set/xintu.data/image.enhance.540"
-  DATASET: "ImageDatasetXinTuUnpaired"
+  NUM_WORKERS: 1
+  ROOT_PAT: "/mnt/data/data.set/xintu.data/pre.image.enhance.540"
+  DATASET: "ImageDatasetXinTu"
 
+OUTPUT_LOG_NAME: "imagelut"
 OUTPUT_DIR: "/mnt/data/train.output/imagelut.test"
 

@@ -49,55 +49,6 @@ class ImageDatasetXinTu(Dataset):
 
         return input_files, expert_files
 
-    # def __getitem__(self, index):
-    #
-    #     if self.mode == "train":
-    #         img_name = os.path.split(self.set1_input_files[index])[-1]
-    #         img_input = cv2.imread(self.set1_input_files[index], -1)
-    #         img_exptC = cv2.imread(self.set1_expert_files[index], -1)
-    #     else:
-    #         img_name = os.path.split(self.test_input_files[index])[-1]
-    #         img_input = cv2.imread(self.test_input_files[index], cv2.IMREAD_COLOR)
-    #         img_input = cv2.cvtColor(img_input, cv2.COLOR_BGR2RGB)
-    #         img_exptC = cv2.imread(self.test_expert_files[index], cv2.IMREAD_COLOR)
-    #         img_exptC = cv2.cvtColor(img_exptC, cv2.COLOR_BGR2RGB)
-    #
-    #     if self.mode == "train":
-    #
-    #         W = min(img_input.shape[1], img_exptC.shape[1])
-    #         H = min(img_input.shape[0], img_exptC.shape[0])
-    #         if img_input.shape[:2] != (H, W):
-    #             img_input = img_input[0:H, 0:W, :]
-    #         if img_exptC.shape[:2] != (H, W):
-    #             img_exptC = img_exptC[0:H, 0:W, :]
-    #
-    #         ratio_H = np.random.uniform(0.6, 1.0)
-    #         ratio_W = np.random.uniform(0.6, 1.0)
-    #         W, H = img_input.shape[1], img_input.shape[0]
-    #         crop_h = round(H * ratio_H)
-    #         crop_w = round(W * ratio_W)
-    #         i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
-    #         img_input = TF_x.crop(img_input, i, j, h, w)
-    #         img_exptC = TF_x.crop(img_exptC, i, j, h, w)
-    #
-    #         # img_input = TF_x.resized_crop(img_input, i, j, h, w, (320,320))
-    #         # img_exptC = TF_x.resized_crop(img_exptC, i, j, h, w, (320,320))
-    #
-    #         if np.random.random() > 0.5:
-    #             img_input = TF_x.hflip(img_input)
-    #             img_exptC = TF_x.hflip(img_exptC)
-    #
-    #         a = np.random.uniform(0.8, 1.2)
-    #         img_input = TF_x.adjust_brightness(img_input, a)
-    #
-    #         img_input = TF_x.to_tensor(img_input)
-    #         img_exptC = TF_x.to_tensor(img_exptC)
-    #     else:
-    #         img_input = TF.to_tensor(img_input)
-    #         img_exptC = TF.to_tensor(img_exptC)
-    #
-    #     return {"A_input": img_input, "A_exptC": img_exptC, "input_name": img_name}
-
     def __getitem__(self, index):
 
         if self.mode == "train":
@@ -181,70 +132,6 @@ class ImageDatasetXinTuUnpaired(Dataset):
 
         return input_files, expert_files
 
-    # def __getitem__(self, index):
-    #
-    #     if self.mode == "train":
-    #         img_name = os.path.split(self.set1_input_files[index])[-1]
-    #         img_input = cv2.imread(self.set1_input_files[index], -1)
-    #         img_exptC = cv2.imread(self.set1_expert_files[index], -1)
-    #         seed = random.randint(1, len(self.set2_expert_files))
-    #         img2 = cv2.imread(self.set2_expert_files[(index + seed) % len(self.set2_expert_files)], -1)
-    #
-    #     else:
-    #         img_name = os.path.split(self.test_input_files[index])[-1]
-    #         img_input = cv2.imread(self.test_input_files[index], cv2.IMREAD_COLOR)
-    #         img_input = cv2.cvtColor(img_input, cv2.COLOR_BGR2RGB)
-    #         img_exptC = cv2.imread(self.test_expert_files[index], cv2.IMREAD_COLOR)
-    #         img_exptC = cv2.cvtColor(img_exptC, cv2.COLOR_BGR2RGB)
-    #         img2 = img_exptC
-    #
-    #     if self.mode == "train":
-    #         W = min(img_input.shape[1], img_exptC.shape[1])
-    #         H = min(img_input.shape[0], img_exptC.shape[0])
-    #         if img_input.shape[:2] != (H, W):
-    #             img_input = img_input[0:H, 0:W, :]
-    #         if img_exptC.shape[:2] != (H, W):
-    #             img_exptC = img_exptC[0:H, 0:W, :]
-
-    #         ratio_H = np.random.uniform(0.6, 1.0)
-    #         ratio_W = np.random.uniform(0.6, 1.0)
-    #         W, H = img_input.shape[1], img_input.shape[0]
-    #         crop_h = round(H * ratio_H)
-    #         crop_w = round(W * ratio_W)
-    #         W2, H2 = img2.shape[1], img2.shape[0]
-    #         crop_h = min(crop_h, H2)
-    #         crop_w = min(crop_w, W2)
-    #         i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
-    #         img_input = TF_x.crop(img_input, i, j, h, w)
-    #         img_exptC = TF_x.crop(img_exptC, i, j, h, w)
-    #         i, j, h, w = TF_x.get_crop_params(img2, output_size=(crop_h, crop_w))
-    #         img2 = TF_x.crop(img2, i, j, h, w)
-    #
-    #         if np.random.random() > 0.5:
-    #             img_input = TF_x.hflip(img_input)
-    #             img_exptC = TF_x.hflip(img_exptC)
-    #
-    #         if np.random.random() > 0.5:
-    #             img2 = TF_x.hflip(img2)
-    #
-    #         # if np.random.random() > 0.5:
-    #         #    img_input = TF_x.vflip(img_input)
-    #         #    img_exptC = TF_x.vflip(img_exptC)
-    #         #    img2 = TF_x.vflip(img2)
-    #
-    #         a = np.random.uniform(0.6, 1.4)
-    #         img_input = TF_x.adjust_brightness(img_input, a)
-    #
-    #         img_input = TF_x.to_tensor(img_input)
-    #         img_exptC = TF_x.to_tensor(img_exptC)
-    #         img2 = TF_x.to_tensor(img2)
-    #     else:
-    #         img_input = TF.to_tensor(img_input)
-    #         img_exptC = TF.to_tensor(img_exptC)
-    #         img2 = TF.to_tensor(img2)
-    #
-    #     return {"A_input": img_input, "A_exptC": img_exptC, "B_exptC": img2, "input_name": img_name}
-
     def __getitem__(self, index):
 
         if self.mode == "train":
@@ -305,6 +192,126 @@ class ImageDatasetXinTuUnpaired(Dataset):
         else:
             return len(self.test_input_files)
 
+
+@DATASET_ARCH_REGISTRY.register()
+class ImageDatasetXinTuTif(ImageDatasetXinTu):
+    def __init__(self, root, mode="train"):
+        super(ImageDatasetXinTuTif, self).__init__(root, mode)
+        return
+
+    def __getitem__(self, index):
+        if self.mode == "train":
+            img_name = os.path.split(self.set1_input_files[index])[-1]
+            img_input = cv2.cvtColor(cv2.imread(self.set1_input_files[index], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(self.set1_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+        else:
+            img_name = os.path.split(self.test_input_files[index])[-1]
+            img_input = cv2.cvtColor(cv2.imread(self.test_input_files[index], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(self.test_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+
+        if self.mode == "train":
+
+            W = min(img_input.shape[1], img_exptC.shape[1])
+            H = min(img_input.shape[0], img_exptC.shape[0])
+            if img_input.shape[:2] != (H, W):
+                img_input = img_input[0:H, 0:W, :]
+            if img_exptC.shape[:2] != (H, W):
+                img_exptC = img_exptC[0:H, 0:W, :]
+
+            ratio_H = np.random.uniform(0.6, 1.0)
+            ratio_W = np.random.uniform(0.6, 1.0)
+            W, H = img_input.shape[1], img_input.shape[0]
+            crop_h = round(H * ratio_H)
+            crop_w = round(W * ratio_W)
+            i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
+            img_input = TF_x.crop(img_input, i, j, h, w)
+            img_exptC = TF_x.crop(img_exptC, i, j, h, w)
+
+            # img_input = TF_x.resized_crop(img_input, i, j, h, w, (320,320))
+            # img_exptC = TF_x.resized_crop(img_exptC, i, j, h, w, (320,320))
+
+            if np.random.random() > 0.5:
+                img_input = TF_x.hflip(img_input)
+                img_exptC = TF_x.hflip(img_exptC)
+
+            a = np.random.uniform(0.8, 1.2)
+            img_input = TF_x.adjust_brightness(img_input, a)
+
+        img_input = TF_x.to_tensor(img_input)
+        img_exptC = TF_x.to_tensor(img_exptC)
+
+        return {"A_input": img_input, "A_exptC": img_exptC, "input_name": img_name}
+
+    def unnormalizing_value(self):
+        return 65535
+
+
+@DATASET_ARCH_REGISTRY.register()
+class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
+    def __init__(self, root, mode="train"):
+        super(ImageDatasetXinTuUnpairedTif, self).__init__(root, mode)
+        return
+
+    def __getitem__(self, index):
+
+        if self.mode == "train":
+            img_name = os.path.split(self.set1_input_files[index])[-1]
+            img_input = cv2.cvtColor(cv2.imread(self.set1_input_files[index], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(self.set1_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+            seed = random.randint(1, len(self.set2_expert_files))
+            img2 = cv2.cvtColor(cv2.imread(self.set2_expert_files[(index + seed) % len(self.set2_expert_files)], -1), cv2.COLOR_BGR2RGB)
+
+        else:
+            img_name = os.path.split(self.test_input_files[index])[-1]
+            img_input = cv2.cvtColor(cv2.imread(self.test_input_files[index], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(self.test_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+            img2 = img_exptC
+
+        if self.mode == "train":
+            W = min(img_input.shape[1], img_exptC.shape[1])
+            H = min(img_input.shape[0], img_exptC.shape[0])
+            if img_input.shape[:2] != (H, W):
+                img_input = img_input[0:H, 0:W, :]
+            if img_exptC.shape[:2] != (H, W):
+                img_exptC = img_exptC[0:H, 0:W, :]
+
+            ratio_H = np.random.uniform(0.6, 1.0)
+            ratio_W = np.random.uniform(0.6, 1.0)
+            W, H = img_input.shape[1], img_input.shape[0]
+            crop_h = round(H * ratio_H)
+            crop_w = round(W * ratio_W)
+            W2, H2 = img2.shape[1], img2.shape[0]
+            crop_h = min(crop_h, H2)
+            crop_w = min(crop_w, W2)
+            i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
+            img_input = TF_x.crop(img_input, i, j, h, w)
+            img_exptC = TF_x.crop(img_exptC, i, j, h, w)
+            i, j, h, w = TF_x.get_crop_params(img2, output_size=(crop_h, crop_w))
+            img2 = TF_x.crop(img2, i, j, h, w)
+
+            if np.random.random() > 0.5:
+                img_input = TF_x.hflip(img_input)
+                img_exptC = TF_x.hflip(img_exptC)
+
+            if np.random.random() > 0.5:
+                img2 = TF_x.hflip(img2)
+
+            # if np.random.random() > 0.5:
+            #    img_input = TF_x.vflip(img_input)
+            #    img_exptC = TF_x.vflip(img_exptC)
+            #    img2 = TF_x.vflip(img2)
+
+            a = np.random.uniform(0.6, 1.4)
+            img_input = TF_x.adjust_brightness(img_input, a)
+
+        img_input = TF_x.to_tensor(img_input)
+        img_exptC = TF_x.to_tensor(img_exptC)
+        img2 = TF_x.to_tensor(img2)
+
+        return {"A_input": img_input, "A_exptC": img_exptC, "B_exptC": img2, "input_name": img_name}
+
+    def unnormalizing_value(self):
+        return 65535
 
 def singal_preprocess(data_path, out_path, txt):
     file = open(os.path.join(data_path, txt), 'r')
