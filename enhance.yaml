@@ -1,10 +1,11 @@
 
 SOLVER:
   BASE_LR: 0.0002
-  MAX_ITER: 4000000
+  MAX_ITER: 10
   CHECK_PERIOD: 5000
   MAX_KEEP: 16
   IMS_PER_BATCH: 1
+  TEST_PER_BATCH: 3
   LAMBDA_GP: 10
   LAMBDA_PIXEL: 1000
   LAMBDA_SMOOTH: 1e-4  # 0 0.00001 0.0001 0.001 0.01 0.1
@@ -28,7 +29,7 @@ MODEL:
 
 DATALOADER:
   NUM_WORKERS: 1
-  ROOT_PAT: "/mnt/data/data.set/xintu.data/pre.image.enhance.540"
+  ROOT_PAT: "/mnt/data/data.set/xintu.data/image.enhance.540"
   DATASET: "ImageDatasetXinTu"
 
 OUTPUT_LOG_NAME: "imagelut"

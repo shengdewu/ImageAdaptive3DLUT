@@ -25,15 +25,15 @@ class AdaptiveTrainer:
 
         if cfg.MODEL.TRAINER.TYPE == 1 and cfg.MODEL.TRAINER.GPU_ID >= 0:
             self.dataloader = DataLoader.create_distribute_sampler_iterable_dataloder(train_dataset,
-                                                                             cfg.SOLVER.IMS_PER_BATCH,
-                                                                             cfg.MODEL.TRAINER.GLOBAL_RANK,
-                                                                             cfg.MODEL.TRAINER.WORLD_SIZE,
-                                                                             cfg.DATALOADER.NUM_WORKERS,
-                                                                             default_log_name=cfg.OUTPUT_LOG_NAME)
+                                                                                      cfg.SOLVER.IMS_PER_BATCH,
+                                                                                      cfg.MODEL.TRAINER.GLOBAL_RANK,
+                                                                                      cfg.MODEL.TRAINER.WORLD_SIZE,
+                                                                                      cfg.DATALOADER.NUM_WORKERS,
+                                                                                      default_log_name=cfg.OUTPUT_LOG_NAME)
         else:
             self.dataloader = DataLoader.create_sampler_iterable_dataloader(train_dataset, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_WORKERS, default_log_name=cfg.OUTPUT_LOG_NAME)
 
-        self.test_dataloader = DataLoader.create_sampler_dataloader(test_dataset)
+        self.test_dataloader = DataLoader.create_sampler_dataloader(test_dataset, batch_size=cfg.SOLVER.TEST_PER_BATCH)
 
         self.model.enable_distribute(cfg)
 

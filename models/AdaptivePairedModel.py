@@ -23,7 +23,6 @@ class AdaptivePairedModel:
         self.lut1 = Generator_3DLUT_n_zero(cfg.MODEL.LUT.DIMS, cfg.MODEL.LUT.SUPPLEMENT_NUMS, cfg.MODEL.DEVICE)
 
         self.classifier = build_classifier(cfg)
-        logging.getLogger(__name__).info('select {} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH))
         self.classifier.init_normal_classifier()
 
         self.tv3 = TV_3D(cfg.MODEL.LUT.DIMS, cfg.MODEL.DEVICE)

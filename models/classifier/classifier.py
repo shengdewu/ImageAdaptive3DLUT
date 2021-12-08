@@ -3,6 +3,7 @@ from .resnet import create_resnet
 from models.functional import discriminator_block
 from models.classifier import CLASSIFIER_ARCH_REGISTRY
 from models.functional import weights_init_normal_classifier
+import logging
 
 
 @CLASSIFIER_ARCH_REGISTRY.register()
@@ -24,6 +25,7 @@ class Classifier(torch.nn.Module):
             torch.nn.Conv2d(128, cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, 8, padding=0),
         )
         self.to(cfg.MODEL.DEVICE)
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
     def init_normal_classifier(self):
@@ -54,6 +56,7 @@ class ClassifierUnpaired(torch.nn.Module):
             torch.nn.Conv2d(128, cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, 8, padding=0),
         )
         self.to(cfg.MODEL.DEVICE)
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
     def init_normal_classifier(self):
@@ -70,8 +73,13 @@ class ClassifierUnpaired(torch.nn.Module):
 class ClassifierResnet(torch.nn.Module):
     def __init__(self, cfg):
         super(ClassifierResnet, self).__init__()
-        self.resnet, self.init = create_resnet(num_classes=cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, device=cfg.MODEL.DEVICE, arch=cfg.MODEL.CLASSIFIER.RESNET_ARCH, model_path=cfg.MODEL.CLASSIFIER.PRETRAINED_PATH)
+        self.resnet, self.init = create_resnet(num_classes=cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1,
+                                               device=cfg.MODEL.DEVICE,
+                                               arch=cfg.MODEL.CLASSIFIER.RESNET_ARCH,
+                                               model_path=cfg.MODEL.CLASSIFIER.PRETRAINED_PATH,
+                                               default_log_name=cfg.OUTPUT_LOG_NAME)
         self.to(cfg.MODEL.DEVICE)
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
     def init_normal_classifier(self):

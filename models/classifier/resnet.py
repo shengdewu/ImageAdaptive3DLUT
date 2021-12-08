@@ -16,13 +16,13 @@ arch_block = {
 }
 
 
-def create_resnet(num_classes, arch='resnet152', device='cuda', model_path='', **kwargs):
+def create_resnet(num_classes, arch='resnet152', device='cuda', model_path='', default_log_name='', **kwargs):
     external_init = True
     resnet = arch_block[arch][0](pretrained=False, **kwargs)
     if isinstance(model_path, str) and model_path != '' and issubclass(kwargs.get('norm_layer', torch.nn.BatchNorm2d), torch.nn.BatchNorm2d):
         state_dict = torch.load(model_path, 'cpu' if device == 'cpu' else 'cuda')
         resnet.load_state_dict(state_dict)
-        logging.info('load model {} from resnet'.format(model_path))
+        logging.getLogger(default_log_name).info('load model {} from resnet'.format(model_path))
         external_init = False
     resnet.fc = torch.nn.Linear(512 * arch_block[arch][1].expansion, num_classes)
     return resnet, external_init
