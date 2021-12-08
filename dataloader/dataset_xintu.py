@@ -187,12 +187,12 @@ class ImageDatasetXinTuTif(ImageDatasetXinTu):
 
     def __getitem__(self, index):
         if self.mode == "train":
-            input_file = self.set1_input_files[index]
+            input_file = self.set1_input_files[index % len(self.set1_input_files)]
             img_name = os.path.split(input_file[0])[-1]
             img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
             img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
         else:
-            input_file = self.test_input_files[index]
+            input_file = self.test_input_files[index % len(self.test_input_files)]
             img_name = os.path.split(input_file[0])[-1]
             img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
             img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
@@ -243,7 +243,7 @@ class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
     def __getitem__(self, index):
 
         if self.mode == "train":
-            input_file = self.set1_input_files[index]
+            input_file = self.set1_input_files[index % len(self.set1_input_files)]
             img_name = os.path.split(input_file[0])[-1]
             img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
             img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
@@ -251,7 +251,7 @@ class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
             img2 = cv2.cvtColor(cv2.imread(self.set2_input_files[(index + seed) % len(self.set2_input_files)][1], -1), cv2.COLOR_BGR2RGB)
 
         else:
-            input_file = self.test_input_files[index]
+            input_file = self.test_input_files[index % len(self.test_input_files)]
             img_name = os.path.split(input_file[0])[-1]
             img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
             img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
