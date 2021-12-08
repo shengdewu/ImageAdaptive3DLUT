@@ -13,7 +13,8 @@ from dataloader import DATASET_ARCH_REGISTRY
 
 @DATASET_ARCH_REGISTRY.register()
 class ImageDataset_HDRplus(Dataset):
-    def __init__(self, root, mode="train"):
+    def __init__(self, cfg, mode="train"):
+        root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
         file = open(os.path.join(root, 'train.txt'), 'r')
@@ -86,7 +87,8 @@ class ImageDataset_HDRplus(Dataset):
 
 @DATASET_ARCH_REGISTRY.register()
 class ImageDataset_HDRplus_unpaired(Dataset):
-    def __init__(self, root, mode="train"):
+    def __init__(self, cfg, mode="train"):
+        root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
         file = open(os.path.join(root, 'train.txt'), 'r')

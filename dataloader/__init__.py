@@ -16,5 +16,5 @@ from .dataset_xintu import ImageDatasetXinTu, ImageDatasetXinTuUnpaired
 
 
 def build_dataset(cfg, model):
-    dataset = DATASET_ARCH_REGISTRY.get(cfg.DATALOADER.DATASET)(cfg.DATALOADER.ROOT_PAT, model)
+    dataset = DATASET_ARCH_REGISTRY.get(cfg.DATALOADER.DATASET)(cfg, model)
     return dataset

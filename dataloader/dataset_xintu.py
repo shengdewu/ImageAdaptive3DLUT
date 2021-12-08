@@ -10,9 +10,30 @@ from PIL import Image
 import torchvision.transforms as transforms
 
 
+def search_files(root, txt, skip_name):
+    file = open(os.path.join(root, txt), 'r')
+    sorted_input_files = sorted([name.strip('\n') for name in file.readlines() if name.find('input,gt') == -1])
+    file.close()
+    file_names = list()
+    for name in sorted_input_files:
+        name = name.split(',')
+        assert len(name) == 2
+        if name[0] in skip_name or name[1] in skip_name:
+            continue
+
+        b_input = os.path.join(root, name[0])
+        b_expert = os.path.join(root, name[1])
+        if not os.path.exists(b_input) or not os.path.exists(b_expert):
+            continue
+        file_names.append((b_input, b_expert))
+
+    return file_names
+
+
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTu(Dataset):
-    def __init__(self, root, mode="train"):
+    def __init__(self, cfg, mode="train"):
+        root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
         self.skip_name = list()
@@ -21,45 +42,26 @@ class ImageDatasetXinTu(Dataset):
             self.skip_name = [name.strip('\n') for name in file.readlines()]
             file.close()
 
-        self.set1_input_files, self.set1_expert_files = ImageDatasetXinTu.search_files(root, 'train_input.txt', self.skip_name)
-        self.set2_input_files, self.set2_expert_files = ImageDatasetXinTu.search_files(root, 'train_label.txt', self.skip_name)
-        self.test_input_files, self.test_expert_files = ImageDatasetXinTu.search_files(root, 'test.txt', self.skip_name)
+        self.set1_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_INPUT_TXT, self.skip_name)
+        self.set2_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_LABEL_TXT, self.skip_name)
+        self.test_input_files = search_files(root, cfg.DATALOADER.XT_TEST_TXT, self.skip_name)
 
         self.set1_input_files = self.set1_input_files + self.set2_input_files
-        self.set1_expert_files = self.set1_expert_files + self.set2_expert_files
-
-    @staticmethod
-    def search_files(root, txt, skip_name):
-        file = open(os.path.join(root, txt), 'r')
-        sorted_input_files = sorted([name.strip('\n') for name in file.readlines() if name.find('input,gt') == -1])
-        file.close()
-        input_files = list()
-        expert_files = list()
-        for name in sorted_input_files:
-            name = name.split(',')
-            assert len(name) == 2
-            if name[0] in skip_name or name[1] in skip_name:
-                continue
-            b_input = os.path.join(root, "rt_tif_16bit_540p", name[0])
-            b_expert = os.path.join(root, "gt_16bit_540p", name[1])
-            if not os.path.exists(b_input) or not os.path.exists(b_expert):
-                continue
-            input_files.append(b_input)
-            expert_files.append(b_expert)
-
-        return input_files, expert_files
+        return
 
     def __getitem__(self, index):
 
         if self.mode == "train":
-            img_name = os.path.split(self.set1_input_files[index % len(self.set1_input_files)])[-1]
-            img_input = Image.open(self.set1_input_files[index % len(self.set1_input_files)])
-            img_exptC = Image.open(self.set1_expert_files[index % len(self.set1_expert_files)])
+            input_file = self.set1_input_files[index % len(self.set1_input_files)]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = Image.open(input_file[0])
+            img_exptC = Image.open(input_file[1])
 
         else:
-            img_name = os.path.split(self.test_input_files[index % len(self.test_input_files)])[-1]
-            img_input = Image.open(self.test_input_files[index % len(self.test_input_files)])
-            img_exptC = Image.open(self.test_expert_files[index % len(self.test_expert_files)])
+            input_file = self.test_input_files[index % len(self.test_input_files)]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = Image.open(input_file[0])
+            img_exptC = Image.open(input_file[1])
 
         if self.mode == "train":
 
@@ -98,7 +100,8 @@ class ImageDatasetXinTu(Dataset):
 
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTuUnpaired(Dataset):
-    def __init__(self, root, mode="train"):
+    def __init__(self, cfg, mode="train"):
+        root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
         self.skip_name = list()
@@ -107,44 +110,27 @@ class ImageDatasetXinTuUnpaired(Dataset):
             self.skip_name = [name.strip('\n') for name in file.readlines()]
             file.close()
 
-        self.set1_input_files, self.set1_expert_files = ImageDatasetXinTuUnpaired.search_files(root, 'train_input.txt')
-        self.set2_input_files, self.set2_expert_files = ImageDatasetXinTuUnpaired.search_files(root, 'train_label.txt')
-        self.test_input_files, self.test_expert_files = ImageDatasetXinTuUnpaired.search_files(root, 'test.txt')
+        self.set1_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_INPUT_TXT, self.skip_name)
+        self.set2_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_LABEL_TXT, self.skip_name)
+        self.test_input_files = search_files(root, cfg.DATALOADER.XT_TEST_TXT, self.skip_name)
 
         return
-
-    @staticmethod
-    def search_files(root, txt):
-        file = open(os.path.join(root, txt), 'r')
-        sorted_input_files = sorted([name.strip('\n') for name in file.readlines() if name.find('input,gt') == -1])
-        file.close()
-        input_files = list()
-        expert_files = list()
-        for name in sorted_input_files:
-            name = name.split(',')
-            assert len(name) == 2
-            b_input = os.path.join(root, "rt_tif_16bit_540p", name[0])
-            b_expert = os.path.join(root, "gt_16bit_540p", name[1])
-            if not os.path.exists(b_input) or not os.path.exists(b_expert):
-                continue
-            input_files.append(b_input)
-            expert_files.append(b_expert)
-
-        return input_files, expert_files
 
     def __getitem__(self, index):
 
         if self.mode == "train":
-            img_name = os.path.split(self.set1_input_files[index % len(self.set1_input_files)])[-1]
-            img_input = Image.open(self.set1_input_files[index % len(self.set1_input_files)])
-            img_exptC = Image.open(self.set1_expert_files[index % len(self.set1_expert_files)])
-            seed = random.randint(1, len(self.set2_expert_files))
-            img2 = Image.open(self.set2_expert_files[(index + seed) % len(self.set2_expert_files)])
+            input_file = self.set1_input_files[index % len(self.set1_input_files)]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = Image.open(input_file[0])
+            img_exptC = Image.open(input_file[1])
+            seed = random.randint(1, len(self.set2_input_files))
+            img2 = Image.open(self.set2_input_files[(index + seed) % len(self.set2_input_files)][1])
 
         else:
-            img_name = os.path.split(self.test_input_files[index % len(self.test_input_files)])[-1]
-            img_input = Image.open(self.test_input_files[index % len(self.test_input_files)])
-            img_exptC = Image.open(self.test_expert_files[index % len(self.test_expert_files)])
+            input_file = self.test_input_files[index % len(self.test_input_files)]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = Image.open(input_file[0])
+            img_exptC = Image.open(input_file[1])
             img2 = img_exptC
 
         if self.mode == "train":
@@ -195,19 +181,21 @@ class ImageDatasetXinTuUnpaired(Dataset):
 
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTuTif(ImageDatasetXinTu):
-    def __init__(self, root, mode="train"):
-        super(ImageDatasetXinTuTif, self).__init__(root, mode)
+    def __init__(self, cfg, mode="train"):
+        super(ImageDatasetXinTuTif, self).__init__(cfg, mode)
         return
 
     def __getitem__(self, index):
         if self.mode == "train":
-            img_name = os.path.split(self.set1_input_files[index])[-1]
-            img_input = cv2.cvtColor(cv2.imread(self.set1_input_files[index], -1), cv2.COLOR_BGR2RGB)
-            img_exptC = cv2.cvtColor(cv2.imread(self.set1_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+            input_file = self.set1_input_files[index]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
         else:
-            img_name = os.path.split(self.test_input_files[index])[-1]
-            img_input = cv2.cvtColor(cv2.imread(self.test_input_files[index], -1), cv2.COLOR_BGR2RGB)
-            img_exptC = cv2.cvtColor(cv2.imread(self.test_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+            input_file = self.test_input_files[index]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
 
         if self.mode == "train":
 
@@ -215,7 +203,7 @@ class ImageDatasetXinTuTif(ImageDatasetXinTu):
             H = min(img_input.shape[0], img_exptC.shape[0])
             if img_input.shape[:2] != (H, W):
                 img_input = img_input[0:H, 0:W, :]
-            if img_exptC.shape[:2] != (H, W):
+            elif img_exptC.shape[:2] != (H, W):
                 img_exptC = img_exptC[0:H, 0:W, :]
 
             ratio_H = np.random.uniform(0.6, 1.0)
@@ -248,23 +236,25 @@ class ImageDatasetXinTuTif(ImageDatasetXinTu):
 
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
-    def __init__(self, root, mode="train"):
-        super(ImageDatasetXinTuUnpairedTif, self).__init__(root, mode)
+    def __init__(self, cfg, mode="train"):
+        super(ImageDatasetXinTuUnpairedTif, self).__init__(cfg, mode)
         return
 
     def __getitem__(self, index):
 
         if self.mode == "train":
-            img_name = os.path.split(self.set1_input_files[index])[-1]
-            img_input = cv2.cvtColor(cv2.imread(self.set1_input_files[index], -1), cv2.COLOR_BGR2RGB)
-            img_exptC = cv2.cvtColor(cv2.imread(self.set1_expert_files[index], -1), cv2.COLOR_BGR2RGB)
-            seed = random.randint(1, len(self.set2_expert_files))
-            img2 = cv2.cvtColor(cv2.imread(self.set2_expert_files[(index + seed) % len(self.set2_expert_files)], -1), cv2.COLOR_BGR2RGB)
+            input_file = self.set1_input_files[index]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
+            seed = random.randint(1, len(self.set2_input_files))
+            img2 = cv2.cvtColor(cv2.imread(self.set2_input_files[(index + seed) % len(self.set2_input_files)][1], -1), cv2.COLOR_BGR2RGB)
 
         else:
-            img_name = os.path.split(self.test_input_files[index])[-1]
-            img_input = cv2.cvtColor(cv2.imread(self.test_input_files[index], -1), cv2.COLOR_BGR2RGB)
-            img_exptC = cv2.cvtColor(cv2.imread(self.test_expert_files[index], -1), cv2.COLOR_BGR2RGB)
+            input_file = self.test_input_files[index]
+            img_name = os.path.split(input_file[0])[-1]
+            img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
+            img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
             img2 = img_exptC
 
         if self.mode == "train":
@@ -272,7 +262,7 @@ class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
             H = min(img_input.shape[0], img_exptC.shape[0])
             if img_input.shape[:2] != (H, W):
                 img_input = img_input[0:H, 0:W, :]
-            if img_exptC.shape[:2] != (H, W):
+            elif img_exptC.shape[:2] != (H, W):
                 img_exptC = img_exptC[0:H, 0:W, :]
 
             ratio_H = np.random.uniform(0.6, 1.0)
@@ -312,6 +302,7 @@ class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
 
     def unnormalizing_value(self):
         return 65535
+
 
 def singal_preprocess(data_path, out_path, txt):
     file = open(os.path.join(data_path, txt), 'r')
@@ -401,69 +392,76 @@ def match(data_path):
     singal_match(data_path, 'test.txt')
 
 
-def process_label():
-    with open('/mnt/data/data.set/fiveK.data/train_input.txt') as tt:
-        tinput = tt.readlines()
-    with open('/mnt/data/data.set/fiveK.data/train_label.txt') as lt:
-        tlabel = lt.readlines()
+def create_train_label(root_path):
+    def label(root_path, paire_name, flag=''):
+        index = [i for i in range(len(paire_name))]
+        test_name_index = random.sample(index, int(0.02 * len(paire_name)))
 
-    tinput = sorted(tinput)
-    tlabel = sorted(tlabel)
+        assert len(test_name_index) == len(set(test_name_index)), 'the test name index duplication'
 
-    for i in range(len(tinput)):
-        seed = random.randint(1, len(tlabel))
-        si = (i + seed) % len(tlabel)
-        print(si)
+        test_name = list()
+        train_name = list()
+        for i in index:
+            if i in test_name_index:
+                test_name.append(paire_name[i])
+            else:
+                train_name.append(paire_name[i])
 
-    with open('gt.txt') as rgt:
+        with open(os.path.join(root_path, '{}.test.txt'.format(flag)), mode='w') as t:
+            t.write('input,gt\n')
+            for name in test_name:
+                assert len(name) == 2
+                t.write('{},{}\n'.format(name[1], name[0]))
+
+        index = [i for i in range(len(train_name))]
+        select_index = random.sample(index, int(0.5 * len(train_name)))
+
+        with open(os.path.join(root_path, '{}.train_input.txt'.format(flag)), mode='w') as ti:
+            with open(os.path.join(root_path, '{}.train_label.txt'.format(flag)), mode='w') as tl:
+                ti.write('input,gt\n')
+                tl.write('input,gt\n')
+                for i in index:
+                    name = train_name[i]
+                    assert len(name) == 2
+                    if i in select_index:
+                        ti.write('{},{}\n'.format(name[1], name[0]))
+                    else:
+                        tl.write('{},{}\n'.format(name[1], name[0]))
+
+    with open(os.path.join(root_path, 'gt_16bit_540p.txt'), mode='r') as rgt:
         gts = [r.strip('\n') for r in rgt.readlines()]
-    with open('input.txt') as igt:
-        inputs = [r.strip('\n') for r in igt.readlines()]
+    with open(os.path.join(root_path, 'rt_tif_16bit_540p.txt'), mode='r') as igt:
+        no_aug_inputs = [r.strip('\n') for r in igt.readlines()]
+    with open(os.path.join(root_path, 'rt_tif_aug_16bit_540p.txt'), mode='r') as igt:
+        aug_inputs = [r.strip('\n') for r in igt.readlines()]
+
+    aug_inputs = dict([(name.split('/')[1], name) for name in aug_inputs])
+    no_aug_inputs = dict([(name.split('/')[1], name) for name in no_aug_inputs])
+
+    aug_inputs.update(no_aug_inputs)
 
     select_name = list()
     for gt in gts:
-        if gt in inputs:
-            zero = '{}_0{}'.format(gt[:-4], gt[-4:])
-            one = '{}_1{}'.format(gt[:-4], gt[-4:])
-            two = '{}_2{}'.format(gt[:-4], gt[-4:])
-            if zero not in inputs or one not in inputs or two not in inputs:
-                print(gt)
-                continue
-            select_name.append((gt, gt))
-            select_name.append((gt, zero))
-            select_name.append((gt, one))
-            select_name.append((gt, two))
+        name = gt.split('/')[1]
+        zero = '{}_0{}'.format(name[:-4], name[-4:])
+        one = '{}_1{}'.format(name[:-4], name[-4:])
+        two = '{}_2{}'.format(name[:-4], name[-4:])
+        if name not in aug_inputs.keys() or zero not in aug_inputs.keys() or one not in aug_inputs.keys() or two not in aug_inputs.keys():
+            print(gt)
+            continue
+        select_name.append((gt, aug_inputs[name]))
+        select_name.append((gt, aug_inputs[zero]))
+        select_name.append((gt, aug_inputs[one]))
+        select_name.append((gt, aug_inputs[two]))
 
-    index = [i for i in range(len(select_name))]
-    test_name_index = random.sample(index, int(0.1*len(select_name)))
+    label(root_path, select_name, 'all')
 
-    assert len(test_name_index) == len(set(test_name_index)), 'the test name index duplication'
+    select_name = list()
+    for gt in gts:
+        name = gt.split('/')[1]
+        if name not in no_aug_inputs.keys():
+            print(gt)
+            continue
+        select_name.append((gt, no_aug_inputs[name]))
 
-    test_name = list()
-    train_name = list()
-    for i in index:
-        if i in test_name_index:
-            test_name.append(select_name[i])
-        else:
-            train_name.append(select_name[i])
-
-    with open('test.txt', mode='w') as t:
-        t.write('input,gt\n')
-        for name in test_name:
-            assert len(name) == 2
-            t.write('{},{}\n'.format(name[1], name[0]))
-
-    index = [i for i in range(len(train_name))]
-    select_index = random.sample(index, int(0.5*len(train_name)))
-
-    with open('train_input.txt', mode='w') as ti:
-        with open('train_label.txt', mode='w') as tl:
-            ti.write('input,gt\n')
-            tl.write('input,gt\n')
-            for i in index:
-                name = train_name[i]
-                assert len(name) == 2
-                if i in select_index:
-                    ti.write('{},{}\n'.format(name[1], name[0]))
-                else:
-                    tl.write('{},{}\n'.format(name[1], name[0]))
+    label(root_path, select_name, 'no_aug')
