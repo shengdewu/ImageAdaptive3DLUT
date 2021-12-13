@@ -80,13 +80,15 @@ class Generator_3DLUT_n_zero:
         else:
             model.load_state_dict(state_dict)
 
-    def state_dict(self, offset=0):
+    def state_dict(self, offset=1):
         state_dict = dict()
         for i, lut in self.generator_3d_lut.items():
             state_dict[i+offset] = get_model_state_dict(lut)
         return state_dict
 
     def load_state_dict(self, state_dict:dict, offset=1):
+        total_lut = len([key for key in state_dict.keys() if key >= offset])
+        assert total_lut == len(self.generator_3d_lut), 'Generator_3DLUT_n_zero owned is not equal to that in the state_dict'
         for i, lut in self.generator_3d_lut.items():
             load_model_state_dict(lut, state_dict[i+offset])
         return
