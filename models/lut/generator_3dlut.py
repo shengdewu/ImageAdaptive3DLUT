@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from models.functional import get_model_state_dict, load_model_state_dict
+from engine.functional import get_model_state_dict, load_model_state_dict
 from .lut_abc import LutAbc
 from trilinear.TrilinearInterpolationModel import TrilinearInterpolationModel
 

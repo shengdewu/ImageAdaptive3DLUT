@@ -73,12 +73,10 @@ class AdaptiveTrainer:
             for k, v in loss.items():
                 loss_avg[k] = loss_avg.get(k, 0) + v
 
-            addtion = self.model.get_addition_state_dict()
-            self.checkpoint.save(epoch, self.model.get_state_dict(), **addtion)
+            self.checkpoint.save(self.model, epoch)
             self.run_after(epoch, loss_avg, total_cnt)
 
-        addtion = self.model.get_addition_state_dict()
-        self.checkpoint.save(self.max_iter, self.model.get_state_dict(), **addtion)
+        self.checkpoint.save(self.model, self.max_iter)
 
         psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device, unnormalizing_value=self.unnormalizing_value)
         logging.getLogger(__name__).info('after train psnr = {}'.format(psnr))

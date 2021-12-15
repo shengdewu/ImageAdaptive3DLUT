@@ -27,12 +27,20 @@ class CheckpointerManager:
         self.recent_checkpoints = list()
         return
 
-    def save(self, iteration, state_dict: Dict[str, OrderedDict], **checkpointables: Any):
-        iteration = int(iteration)
+    @staticmethod
+    def compose_state_dict(model, iteration):
+        checkpointables = model.get_addition_state_dict()
+        state_dict = model.get_state_dict()
         additional_state = {"iteration": iteration}
         checkpointables.update(additional_state)
+        return state_dict, checkpointables
+
+    def save(self, model, iteration):
+        iteration = int(iteration)
 
         if (iteration+1) % self.check_period == 0:
+            state_dict, checkpointables = CheckpointerManager.compose_state_dict(model, iteration)
+
             name = "{}_{:07d}".format(self.file_prefix, iteration)
             self.checkpointer.save(name, state_dict, **checkpointables)
             if self.max_keep is not None:
@@ -44,6 +52,7 @@ class CheckpointerManager:
 
         if self.max_iter is not None:
             if iteration >= self.max_iter - 1:
+                state_dict, checkpointables = CheckpointerManager.compose_state_dict(model, iteration)
                 name = "{}_final".format(self.file_prefix, iteration)
                 self.checkpointer.save(name, state_dict, **checkpointables)
         return

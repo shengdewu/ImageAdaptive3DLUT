@@ -2,10 +2,10 @@
 SOLVER:
   BASE_LR: 0.0002
   MAX_ITER: 10
-  CHECK_PERIOD: 5000
+  CHECKPOINT_PERIOD: 1
   MAX_KEEP: 16
-  IMS_PER_BATCH: 1
-  TEST_PER_BATCH: 3
+  IMS_PER_BATCH: 2
+  TEST_PER_BATCH: 1
   LAMBDA_GP: 10
   LAMBDA_PIXEL: 1000
   LAMBDA_SMOOTH: 1e-4  # 0 0.00001 0.0001 0.001 0.01 0.1
@@ -16,25 +16,26 @@ SOLVER:
     B2: 0.999
 
 MODEL:
-  WEIGHTS: ""
-  DEVICE: "cuda"
-  ARCH: "AdaptiveUnPairedModel"
+  WEIGHTS: "/home/shengdewu/data_shadow/train.output/adaptive.3dlut/img.lut.out.tif/AdaptivePairedModel_0189999.pth"
+  DEVICE: "cpu"
+  ARCH: "AdaptivePairedModel"
   LUT:
-    SUPPLEMENT_NUMS: 4
+    SUPPLEMENT_NUMS: 18
     DIMS: 64
   CLASSIFIER:
-    PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet34-333f7ec4.pth"
-    ARCH: "ClassifierUnpaired"
-    RESNET_ARCH: "resnet34"
+    PRETRAINED_PATH: ""
+    ARCH: "ClassifierResnet"
+    RESNET_ARCH: "resnet50"
 
 DATALOADER:
   NUM_WORKERS: 1
-  DATA_PATH: "/mnt/data/data.set/fiveK.data"
-  DATASET: "ImageDataset_sRGB_unpaired"
+  DATA_PATH: "/mnt/data/data.set/xintu.data/xt.image.enhancement.540"
+  DATASET: "ImageDatasetXinTuTif"
   XT_TRAIN_INPUT_TXT: "all.train_input.txt"
   XT_TRAIN_LABEL_TXT: "all.train_label.txt"
   XT_TEST_TXT: "all.test.txt"
 
 OUTPUT_LOG_NAME: "imagelut"
-OUTPUT_DIR: "/mnt/data/train.output/imagelut.test"
+OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/74"
 
+# '7001_0429.tif'

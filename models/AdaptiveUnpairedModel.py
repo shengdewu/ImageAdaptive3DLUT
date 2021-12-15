@@ -7,7 +7,7 @@ from models.AdaptivePairedModel import AdaptivePairedModel
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
-from models.functional import get_model_state_dict, load_model_state_dict
+from engine.functional import get_model_state_dict, load_model_state_dict
 
 
 @MODEL_ARCH_REGISTRY.register()
