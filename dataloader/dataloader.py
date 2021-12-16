@@ -1,5 +1,5 @@
 import torch.utils.data
-from dataloader import build_dataset
+from dataloader.build import build_dataset
 from engine.samplers.distributed_sampler import TrainingSampler
 from engine.data.common import ToIterableDataset
 import multiprocessing

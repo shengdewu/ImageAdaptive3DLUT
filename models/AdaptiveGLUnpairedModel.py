@@ -1,29 +1,30 @@
 import torch
 import math
-from models.build  import MODEL_ARCH_REGISTRY
-from models.discriminator.discriminator import Discriminator
+from models.build import MODEL_ARCH_REGISTRY
+from models.discriminator.patch_discriminator import PatchDiscriminator
 from models.functional import weights_init_normal, compute_gradient_penalty
 from models.AdaptivePairedModel import AdaptivePairedModel
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
 from engine.functional import get_model_state_dict, load_model_state_dict
+from models.gan_loss import GanLoss
 
 
 @MODEL_ARCH_REGISTRY.register()
-class AdaptiveUnPairedModel(AdaptivePairedModel):
+class AdaptiveGLUnPairedModel(AdaptivePairedModel):
     def __init__(self, cfg):
-        super(AdaptiveUnPairedModel, self).__init__(cfg)
+        super(AdaptiveGLUnPairedModel, self).__init__(cfg)
         setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=__name__)
         self.lambda_gp = cfg.SOLVER.LAMBDA_GP
         self.lambda_pixel = cfg.SOLVER.LAMBDA_PIXEL
         self.n_critic = cfg.SOLVER.N_CRITIC
 
-        self.discriminator = Discriminator(device=cfg.MODEL.DEVICE)
+        self.discriminator = PatchDiscriminator(device=cfg.MODEL.DEVICE)
         self.discriminator.apply(weights_init_normal)
 
         # Loss functions
-        self.criterion_GAN = torch.nn.MSELoss()
+        self.criterion_GAN = GanLoss(torch.nn.MSELoss(reduction='none'), device=cfg.MODEL.DEVICE)
 
         self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=cfg.SOLVER.BASE_LR, betas=(cfg.SOLVER.ADAM.B1, cfg.SOLVER.ADAM.B2))
         return
@@ -41,16 +42,19 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
         pred_real = self.discriminator(real_B)
         pred_fake = self.discriminator(fake_B)
 
+        loss_real = self.criterion_GAN(pred_real, True)
+        loss_fake = self.criterion_GAN(pred_fake, False)
+
         # Gradient penalty
         gradient_penalty = compute_gradient_penalty(self.discriminator, real_B, fake_B, grad_outputs_shape=pred_real.shape, device=self.device)
 
         # Total loss
-        loss_D = -torch.mean(pred_real) + torch.mean(pred_fake) + self.lambda_gp * gradient_penalty
+        loss_D = -torch.mean(loss_real) + torch.mean(loss_fake) + self.lambda_gp * gradient_penalty
 
         loss_D.backward()
         self.optimizer_D.step()
 
-        loss_D_avg = (-torch.mean(pred_real) + torch.mean(pred_fake)) / 2
+        loss_D_avg = (-torch.mean(loss_real) + torch.mean(loss_fake)) / 2
         psnr_avg = 0
         # ------------------
         #  Train Generators
@@ -64,6 +68,7 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
 
             fake_B, weights_norm = self.generator(real_A)
             pred_fake = self.discriminator(fake_B)
+            loss_fake = self.criterion_GAN(pred_fake, True)
             # Pixel-wise loss
             loss_pixel = self.criterion_pixelwise(fake_B, real_A)
 
@@ -73,13 +78,13 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
             tv_cons = sum(tv1) + tv0
             mn_cons = sum(mn1) + mn0
 
-            loss_G = -torch.mean(pred_fake) + self.lambda_pixel * loss_pixel + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
+            loss_G = -torch.mean(loss_fake) + self.lambda_pixel * loss_pixel + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
 
             loss_G.backward()
 
             self.optimizer_G.step()
 
-            loss_G_avg = -torch.mean(pred_fake)
+            loss_G_avg = -torch.mean(loss_fake)
             psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
         return {'loss_D_avg': loss_D_avg.item(), 'loss_G_avg': loss_G_avg.item(), 'loss_pixel_avg': loss_pixel.item(), 'psnr_avg': psnr_avg,

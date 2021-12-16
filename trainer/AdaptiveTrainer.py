@@ -1,7 +1,7 @@
 import logging
 from dataloader.dataloader import DataLoader
 from engine.checkpoint.CheckpointerManager import CheckpointerManager
-from models import build_model
+from models.build import build_model
 import engine.comm as comm
 from engine.log.logger import setup_logger
 import torch

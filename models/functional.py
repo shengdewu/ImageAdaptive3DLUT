@@ -16,17 +16,18 @@ def discriminator_block(in_filters, out_filters, normalization=False):
     return layers
 
 
-def weights_init_normal_classifier(m):
+def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
         torch.nn.init.xavier_normal_(m.weight.data)
 
     elif classname.find("BatchNorm2d") != -1 or classname.find("InstanceNorm2d") != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
+        if m.affine:
+            torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+            torch.nn.init.constant_(m.bias.data, 0.0)
 
 
-def compute_gradient_penalty(D: torch.nn.Module, real_samples, fake_samples, device='cuda'):
+def compute_gradient_penalty(D: torch.nn.Module, real_samples, fake_samples, grad_outputs_shape, device='cuda'):
 
     Tensor = torch.cuda.FloatTensor if device == 'cuda' else torch.FloatTensor
 
@@ -36,7 +37,7 @@ def compute_gradient_penalty(D: torch.nn.Module, real_samples, fake_samples, dev
     # Get random interpolation between real and fake samples
     interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
     d_interpolates = D(interpolates)
-    fake = Variable(Tensor(real_samples.shape[0], 1, 1, 1).fill_(1.0), requires_grad=False)
+    fake = Variable(Tensor(grad_outputs_shape).fill_(1.0), requires_grad=False)
     # Get gradient w.r.t. interpolates
     gradients = autograd.grad(
         outputs=d_interpolates,

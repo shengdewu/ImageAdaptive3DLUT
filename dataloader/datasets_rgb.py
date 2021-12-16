@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
-from dataloader import DATASET_ARCH_REGISTRY
+from dataloader.build import DATASET_ARCH_REGISTRY
 
 
 @DATASET_ARCH_REGISTRY.register()

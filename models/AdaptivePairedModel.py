@@ -1,10 +1,10 @@
 import torch
 import itertools
 import math
-from models import MODEL_ARCH_REGISTRY
+from models.build import MODEL_ARCH_REGISTRY
 from models.lut.generator_3dlut import Generator_3DLUT_identity, Generator_3DLUT_n_zero
 from models.lut.total_variation import TV_3D
-from models.classifier import build_classifier
+from models.classifier.build import build_classifier
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm

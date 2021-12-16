@@ -8,7 +8,7 @@ from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
 import dataloader.datasets_xyz as TF_x
-from dataloader import DATASET_ARCH_REGISTRY
+from dataloader.build import DATASET_ARCH_REGISTRY
 
 
 @DATASET_ARCH_REGISTRY.register()

@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 import cv2
 import dataloader.torchvision_x_functional as TF_x
 import torchvision.transforms.functional as TF
-from dataloader import DATASET_ARCH_REGISTRY
+from dataloader.build import DATASET_ARCH_REGISTRY
 from PIL import Image
 import torchvision.transforms as transforms
 

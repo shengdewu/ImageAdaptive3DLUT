@@ -1,8 +1,8 @@
 import torch
 from .resnet import create_resnet
 from models.functional import discriminator_block
-from models.classifier import CLASSIFIER_ARCH_REGISTRY
-from models.functional import weights_init_normal_classifier
+from models.classifier.build import CLASSIFIER_ARCH_REGISTRY
+from models.functional import weights_init_normal
 import logging
 
 
@@ -29,7 +29,7 @@ class Classifier(torch.nn.Module):
         return
 
     def init_normal_classifier(self):
-        self.apply(weights_init_normal_classifier)
+        self.apply(weights_init_normal)
         #torch.nn.init.constant_(self.model[12].bias.data, 1.0)  # last layer paper error ?
         torch.nn.init.constant_(self.model[-1].bias.data, 1.0)
         return
@@ -60,7 +60,7 @@ class ClassifierUnpaired(torch.nn.Module):
         return
 
     def init_normal_classifier(self):
-        self.apply(weights_init_normal_classifier)
+        self.apply(weights_init_normal)
         #torch.nn.init.constant_(self.model[12].bias.data, 1.0)  # last layer paper error?
         torch.nn.init.constant_(self.model[-1].bias.data, 1.0)  # last layer paper error?
         return
@@ -84,7 +84,7 @@ class ClassifierResnet(torch.nn.Module):
 
     def init_normal_classifier(self):
         if self.init:
-            self.apply(weights_init_normal_classifier)
+            self.apply(weights_init_normal)
         torch.nn.init.constant_(self.resnet.fc.bias.data, 1.0)  # last layer
         return
 
