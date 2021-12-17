@@ -1,14 +1,20 @@
 
 SOLVER:
   BASE_LR: 0.0002
-  MAX_ITER: 10
-  CHECKPOINT_PERIOD: 1
+  MAX_ITER: 2
+  CHECKPOINT_PERIOD: 4
   MAX_KEEP: 16
   IMS_PER_BATCH: 2
   TEST_PER_BATCH: 1
   LAMBDA_GP: 10
   LAMBDA_PIXEL: 1000
-  LAMBDA_SMOOTH: 1e-4  # 0 0.00001 0.0001 0.001 0.01 0.1
+  """
+  1.the LAMBDA_SMOOTH should be small since a heavy smoothness penalty will result in flat 3D LUTs while limited transformation flexibility
+  2. the LAMBDA_MONOTONICITY , it can be relatively stronger, can help to update the parameters that may be not be activated by input data
+  3. the LAMBDA_SMOOTH more than 0.0001 leads to worse PSNR , but PSNR is insensitive to the choice LAMBDA_MONOTONICITY
+  4. base LAMBDA_SMOOTH and LAMBDA_MONOTONICITY (0.0001, 10)
+  """
+  LAMBDA_SMOOTH: 1e-5  # 0 0.00001 0.0001 0.001 0.01 0.1
   LAMBDA_MONOTONICITY: 10.0 # 0.1 0 1.0 10 100 1000
   N_CRITIC: 1
   ADAM:
@@ -16,7 +22,7 @@ SOLVER:
     B2: 0.999
 
 MODEL:
-  WEIGHTS: "/home/shengdewu/data_shadow/train.output/adaptive.3dlut/img.lut.out.tif/AdaptivePairedModel_0189999.pth"
+  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c18/AdaptivePairedModel_final.pth"
   DEVICE: "cpu"
   ARCH: "AdaptivePairedModel"
   LUT:
@@ -31,11 +37,11 @@ DATALOADER:
   NUM_WORKERS: 1
   DATA_PATH: "/mnt/data/data.set/xintu.data/xt.image.enhancement.540"
   DATASET: "ImageDatasetXinTuTif"
-  XT_TRAIN_INPUT_TXT: "all.train_input.txt"
-  XT_TRAIN_LABEL_TXT: "all.train_label.txt"
-  XT_TEST_TXT: "all.test.txt"
+  XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
+  XT_TRAIN_LABEL_TXT: "no_aug.train_label.txt"
+  XT_TEST_TXT: "no_aug.test.txt"
 
 OUTPUT_LOG_NAME: "imagelut"
-OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/74"
+OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/c18"
 
 # '7001_0429.tif'
