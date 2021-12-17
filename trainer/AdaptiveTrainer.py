@@ -155,8 +155,8 @@ class AdaptiveTrainer:
     def visualize_3dlut(lut0, lut1, save_path, size=512, unnormalizing_value=255):
         fmt = np.uint8 if unnormalizing_value == 255 else np.uint16
         l = lut0.transfer2cube(size)
-        cv2.imwrite('{}/identity.tif'.format(save_path), fmt(l * 65535))
+        cv2.imwrite('{}/identity.tif'.format(save_path), fmt(l * unnormalizing_value))
         for k, lut in lut1.items():
             l = lut.transfer2cube(size)
-            cv2.imwrite('{}/zero_{}.tif'.format(save_path, k), fmt(l * 65535))
+            cv2.imwrite('{}/zero_{}.tif'.format(save_path, k), fmt(l * unnormalizing_value))
         return
