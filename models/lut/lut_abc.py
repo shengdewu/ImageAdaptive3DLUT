@@ -3,6 +3,20 @@ from typing import Any, Callable
 import numpy as np
 
 
+def transfer3d_2d(box, dim, lut3d, lut2d):
+    for bx in range(box):
+        for by in range(box):
+            for g in range(dim):
+                for r in range(dim):
+                    b = bx + by * box
+                    x = r + bx * dim
+                    y = g + by * dim
+                    lut2d[y, x, 0] = lut3d[0, b, g, r]
+                    lut2d[y, x, 1] = lut3d[1, b, g, r]
+                    lut2d[y, x, 2] = lut3d[2, b, g, r]
+    return np.clip(lut2d, 0.0, 1.0)[:, :, ::-1]
+
+
 def _forward_unimplemented(self, *input: Any) -> None:
     r"""Defines the computation performed at every call.
 
@@ -37,18 +51,5 @@ class LutAbc(torch.nn.Module):
         box = int(size / dim1)
         assert box * box == dim1, 'the box power({}, 2) must be == {}'.format(box, dim1)
         lut2d = np.zeros((size, size, 3), dtype=np.float32)
-        self.transfer(box, dim1, lut3d, lut2d)
+        transfer3d_2d(box, dim1, lut3d, lut2d)
         return lut2d
-
-    def transfer(self, box, dim, lut3d, lut2d):
-        for bx in range(box):
-            for by in range(box):
-                for g in range(dim):
-                    for r in range(dim):
-                        b = bx + by * box
-                        x = r + bx * dim
-                        y = g + by * dim
-                        lut2d[y, x, 0] = lut3d[0, b, g, r]
-                        lut2d[y, x, 1] = lut3d[1, b, g, r]
-                        lut2d[y, x, 2] = lut3d[2, b, g, r]
-        return np.clip(lut2d, 0.0, 1.0)[:, :, ::-1]

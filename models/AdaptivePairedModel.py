@@ -80,6 +80,20 @@ class AdaptivePairedModel:
         weights_norm = torch.mean(pred ** 2)
         return combine_a, weights_norm
 
+    @torch.no_grad()
+    def generate_lut(self, img):
+        pred = self.classifier(img).squeeze()
+
+        assert pred.shape[-1] - 1 == len(self.lut1)
+
+        if len(pred.shape) == 1:
+            pred = pred.unsqueeze(0)
+
+        combine_lut = pred[:, 0] * self.lut0.lut
+        for i, lut in self.lut1.foreach():
+            combine_lut += pred[:, i + 1] * lut.lut
+        return torch.clip(combine_lut, 0.0, 1.0)
+
     def enable_train(self):
         self.lut0.train()
         self.lut1.train()
