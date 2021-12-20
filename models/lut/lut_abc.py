@@ -14,7 +14,7 @@ def transfer3d_2d(box, dim, lut3d, lut2d):
                     lut2d[y, x, 0] = lut3d[0, b, g, r]
                     lut2d[y, x, 1] = lut3d[1, b, g, r]
                     lut2d[y, x, 2] = lut3d[2, b, g, r]
-    return np.clip(lut2d, 0.0, 1.0)[:, :, ::-1]
+    return np.clip(lut2d, 0.0, 1.0)
 
 
 def _forward_unimplemented(self, *input: Any) -> None:

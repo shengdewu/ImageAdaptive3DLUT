@@ -108,7 +108,7 @@ class Inference:
         assert box * box == dim1, 'the box power({}, 2) must be == {}'.format(box, dim1)
         lut2d = np.zeros((size, size, 3), dtype=np.float32)
         transfer3d_2d(box, dim1, lut3d, lut2d)
-        return lut2d
+        return lut2d[:, :, ::-1]
 
 
 if __name__ == '__main__':
@@ -119,43 +119,53 @@ if __name__ == '__main__':
     #
     # eval = Inference(cfg)
     # eval.resume_or_load()
-    # root_path = '/mnt/data/data.set/xintu.data/xt.image.enhancement.540/rt_test'
-    # out_path = '/home/shengdewu/data_shadow/train.output/imagelut.test'
-    # for name in os.listdir(root_path):
-    #     img_input = cv2.cvtColor(cv2.imread(os.path.join(root_path, name), -1), cv2.COLOR_BGR2RGB)
-    #     img_input = TF_x.to_tensor(img_input).unsqueeze(0).to(cfg.MODEL.DEVICE)
-    #     fake_B = eval.generator(img_input)
-    #     img_sample = torch.cat((img_input, fake_B), -1)
-    #     eval.save_image(img_sample, '{}/{}'.format(out_path, name), unnormalizing_value=eval.unnormalizing_value, nrow=1, normalize=False)
-    #
     # eval.loop()
 
     root_path = '/home/shengdewu/data_shadow/train.output/imagelut.test'
-    out_path = '/home/shengdewu/data_shadow/train.output/imagelut.test/base'
+    out_path = '/home/shengdewu/data_shadow/train.output/imagelut.test/compare.c12'
     os.makedirs(out_path, exist_ok=True)
 
-    base_path = os.path.join(root_path, 'base.normal')
-    compare_path_18 = os.path.join(root_path, 'base.warm')
-    # compare_path_12 = os.path.join(root_path, 'c12')
+    base_path = os.path.join(root_path, 'base')
+    compare_paths = [os.path.join(root_path, 'c18'), os.path.join(root_path, 'c12')]
 
     base_names = [name for name in os.listdir(base_path) if name.find('lut') == -1]
     for name in tqdm.tqdm(base_names):
-        compare_name_18 = os.path.join(compare_path_18, name)
-        # compare_name_12 = os.path.join(compare_path_12, name)
+        compare_names = [os.path.join(compare_path, name) for compare_path in compare_paths]
 
-        if not os.path.exists(compare_name_18):# or not os.path.exists(compare_name_12):
+        is_exist = [not os.path.exists(compare_name) for compare_name in compare_names]
+        if np.any(is_exist):
             continue
         base_img = cv2.imread(os.path.join(base_path, name), cv2.IMREAD_UNCHANGED)
-        compare_img_18 = cv2.imread(compare_name_18, cv2.IMREAD_UNCHANGED)
-        # compare_img_12 = cv2.imread(compare_name_12, cv2.IMREAD_UNCHANGED)
+        compare_imgs = [cv2.imread(compare_name, cv2.IMREAD_UNCHANGED) for compare_name in compare_names]
         h, w, c = base_img.shape
-        h18, w18, _ = compare_img_18.shape
-        # h12, w12, _ = compare_img_12.shape
-        # concat = np.zeros(shape=(max(h18, h12, h)*3, max(w, w18, w12), c), dtype=base_img.dtype)
-        concat = np.zeros(shape=(max(h18, h) * 2, max(w, w18), c), dtype=base_img.dtype)
+        shapes = [compare_img.shape for compare_img in compare_imgs]
+        ch = [shape[0] for shape in shapes]
+        cw = [shape[1] for shape in shapes]
+        ch = sum(ch)
+        cw = max(cw)
+        concat = np.zeros(shape=(ch+h, max(w, cw), c), dtype=base_img.dtype)
         concat[:h, :w, :] = base_img
-        concat[h:h + h18, :w18, :] = compare_img_18
-        # concat[h + h18:h + h18 + h12, :w12, :] = compare_img_12
+        start_h = h
+        for i in range(len(compare_imgs)):
+            h, w, c = shapes[i]
+            assert shapes[i] == compare_imgs[i].shape
+            concat[start_h:h+start_h, :w, :] = compare_imgs[i]
+            start_h += h
         cv2.imwrite(os.path.join(out_path, name), concat)
+
+
+
+"""
+base 1169 1171 Artifact
+"""
+"""
+1165_306.tif
+1166_72.tif
+1166_341.tif
+1174_101
+
+LAMBDA_MONOTONICITY
+1184_18
+"""
 
 
