@@ -53,13 +53,12 @@ class Inference:
             real_B = data["A_exptC"].to(self.device)
 
             combine_lut = self.model.generate_lut(real_A)
-
-            pos = input_name.lower().rfind('.{}'.format(format))
-            Inference.save_lut(combine_lut.detach().cpu().numpy(), '{}/{}.lut.{}'.format(self.output, input_name[:pos], input_name[pos + 1:]), self.unnormalizing_value)
-
             _, fake_B = self.triliear(combine_lut, real_A)
             img_sample = torch.cat((real_A, fake_B, real_B), -1)
+
             Inference.save_image(img_sample, '{}/{}'.format(self.output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
+            pos = input_name.lower().rfind('.{}'.format(format))
+            Inference.save_lut(combine_lut.detach().cpu().numpy(), '{}/{}.lut.{}'.format(self.output, input_name[:pos], input_name[pos + 1:]), self.unnormalizing_value)
 
             # fake_B = torch.round(fake_B * self.unnormalizing_value)
             # real_B = torch.round(real_B * self.unnormalizing_value)
@@ -111,22 +110,8 @@ class Inference:
         return lut2d[:, :, ::-1]
 
 
-if __name__ == '__main__':
-    # args = default_argument_parser().parse_args()
-    # cfg = get_cfg()
-    # cfg.merge_from_file(args.config_file)
-    # cfg.merge_from_list(args.opts)
-    #
-    # eval = Inference(cfg)
-    # eval.resume_or_load()
-    # eval.loop()
-
-    root_path = '/home/shengdewu/data_shadow/train.output/imagelut.test'
-    out_path = '/home/shengdewu/data_shadow/train.output/imagelut.test/compare.c12'
+def compare(base_path, compare_paths, out_path):
     os.makedirs(out_path, exist_ok=True)
-
-    base_path = os.path.join(root_path, 'base')
-    compare_paths = [os.path.join(root_path, 'c18'), os.path.join(root_path, 'c12')]
 
     base_names = [name for name in os.listdir(base_path) if name.find('lut') == -1]
     for name in tqdm.tqdm(base_names):
@@ -152,20 +137,26 @@ if __name__ == '__main__':
             concat[start_h:h+start_h, :w, :] = compare_imgs[i]
             start_h += h
         cv2.imwrite(os.path.join(out_path, name), concat)
+    return
 
 
+if __name__ == '__main__':
+    # args = default_argument_parser().parse_args()
+    # cfg = get_cfg()
+    # cfg.merge_from_file(args.config_file)
+    # cfg.merge_from_list(args.opts)
+    #
+    # eval = Inference(cfg)
+    # eval.resume_or_load()
+    # eval.loop()
 
-"""
-base 1169 1171 Artifact
-"""
-"""
-1165_306.tif
-1166_72.tif
-1166_341.tif
-1174_101
+    root_path = '/home/shengdewu/data_shadow/train.output/imagelut.test'
+    out_path = '/home/shengdewu/data_shadow/train.output/imagelut.test/compare.c12'
 
-LAMBDA_MONOTONICITY
-1184_18
-"""
+    base_path = os.path.join(root_path, 'base')
+    compare_paths = [os.path.join(root_path, 'c18'), os.path.join(root_path, 'c12')]
+
+    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path)
+
 
 
