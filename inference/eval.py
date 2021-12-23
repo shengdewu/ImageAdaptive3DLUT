@@ -11,11 +11,8 @@ import cv2
 import numpy as np
 from dataloader.build import build_dataset
 from models.lut.lut_abc import transfer3d_2d
-from engine.config.parser import default_argument_parser
-from engine.config import get_cfg
 import os
 import tqdm
-import dataloader.torchvision_x_functional as TF_x
 
 
 class Inference:
@@ -138,25 +135,6 @@ def compare(base_path, compare_paths, out_path):
             start_h += h
         cv2.imwrite(os.path.join(out_path, name), concat)
     return
-
-
-if __name__ == '__main__':
-    # args = default_argument_parser().parse_args()
-    # cfg = get_cfg()
-    # cfg.merge_from_file(args.config_file)
-    # cfg.merge_from_list(args.opts)
-    #
-    # eval = Inference(cfg)
-    # eval.resume_or_load()
-    # eval.loop()
-
-    root_path = '/home/shengdewu/data_shadow/train.output/imagelut.test'
-    out_path = '/home/shengdewu/data_shadow/train.output/imagelut.test/compare.c12'
-
-    base_path = os.path.join(root_path, 'base')
-    compare_paths = [os.path.join(root_path, 'c18'), os.path.join(root_path, 'c12')]
-
-    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path)
 
 
 
