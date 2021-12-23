@@ -37,12 +37,6 @@ _C.SOLVER.CLIP_GRADIENTS.NORM_TYPE = 2.0
 # ---------------------------------------------------------------------------- #
 _C.DATALOADER = CfgNode(new_allowed=True)
 _C.DATALOADER.NUM_WORKERS = 4
-_C.DATALOADER.ROOT_PATH = ''
-_C.DATALOADER.SUB_PATHS = CfgNode(new_allowed=True)
-_C.DATALOADER.SUB_PATHS.ANNO_PATH = ''
-_C.DATALOADER.SUB_PATHS.IMG_PATH = ''
-_C.DATALOADER.JSON_NAMES =['']
-
 
 # -----------------------------------------------------------------------------
 # INPUT

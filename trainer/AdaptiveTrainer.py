@@ -80,7 +80,6 @@ class AdaptiveTrainer:
 
         psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device, unnormalizing_value=self.unnormalizing_value)
         logging.getLogger(__name__).info('after train psnr = {}'.format(psnr))
-        self.visualize_3dlut(self.model.lut0, self.model.lut1.generator_3d_lut, self.output, unnormalizing_value=self.unnormalizing_value)
         self.visualize_result(self.model, self.test_dataloader, self.device, self.output, unnormalizing_value=self.unnormalizing_value)
         return
 
@@ -148,15 +147,4 @@ class AdaptiveTrainer:
         # Add 0.5 after unnormalizing to [0, unnormalizing_value] to round to nearest integer
         ndarr = grid.mul(unnormalizing_value).add_(0.5).clamp_(0, unnormalizing_value).permute(1, 2, 0).to('cpu').numpy().astype(fmt)
         cv2.imwrite(fp, ndarr[:, :, ::-1])
-        return
-
-    @staticmethod
-    @torch.no_grad()
-    def visualize_3dlut(lut0, lut1, save_path, size=512, unnormalizing_value=255):
-        fmt = np.uint8 if unnormalizing_value == 255 else np.uint16
-        l = lut0.transfer2cube(size)
-        cv2.imwrite('{}/identity.tif'.format(save_path), fmt(l * unnormalizing_value))
-        for k, lut in lut1.items():
-            l = lut.transfer2cube(size)
-            cv2.imwrite('{}/zero_{}.tif'.format(save_path, k), fmt(l * unnormalizing_value))
         return

@@ -42,14 +42,3 @@ class LutAbc(torch.nn.Module):
     @property
     def lut(self):
         return self._lut
-
-    def transfer2cube(self, size):
-        lut3d = self._lut.detach().cpu().numpy()
-        n, dim1, dim2, dim3 = lut3d.shape
-        assert dim1 == dim2 and dim1 == dim3
-        assert size % dim1 == 0
-        box = int(size / dim1)
-        assert box * box == dim1, 'the box power({}, 2) must be == {}'.format(box, dim1)
-        lut2d = np.zeros((size, size, 3), dtype=np.float32)
-        transfer3d_2d(box, dim1, lut3d, lut2d)
-        return lut2d

@@ -9,6 +9,7 @@ from engine.log.logger import setup_logger
 import logging
 from abc import ABC
 import abc
+import os
 
 
 class BaseScheduler(ABC):
@@ -59,6 +60,10 @@ class BaseScheduler(ABC):
         logger = setup_logger(cfg.OUTPUT_DIR, rank, name=cfg.OUTPUT_LOG_NAME)
         if comm.is_main_process() and cfg.OUTPUT_DIR:
             logger.info("is distribute {} Running with full config:\n{}".format(is_distributed, cfg.dump()))
+            path = os.path.join(cfg.OUTPUT_DIR, "config.yaml")
+
+            with PathManager.open(path, "w") as f:
+                f.write(cfg.dump())
 
         self.lunch_func(cfg, args)
         return
