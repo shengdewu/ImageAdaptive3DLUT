@@ -107,11 +107,41 @@ class Inference:
         return lut2d[:, :, ::-1]
 
 
-def compare(base_path, compare_paths, out_path):
+class KRResize:
+    def __init__(self, short_edge_length, interp=cv2.INTER_LINEAR):
+        self.short_edge_length = short_edge_length
+        self.interp = interp
+        return
+
+    def __call__(self, image):
+        assert isinstance(image, np.ndarray)
+        h, w, c = image.shape
+
+        scala = self.short_edge_length * 1.0 / min(h, w)
+        if h < w:
+            new_h, new_w = self.short_edge_length, w * scala
+        else:
+            new_h, new_w = h * scala, self.short_edge_length
+
+        new_h, new_w = int(new_h + 0.5), int(new_w + 0.5)
+
+        return cv2.resize(image, dsize=(new_w, new_h), interpolation=self.interp)
+
+    def __str__(self):
+        return 'RandomResize'
+
+
+def compare(base_path, compare_paths, out_path, skip=False):
     os.makedirs(out_path, exist_ok=True)
+    skip_name = list()
+    if skip:
+        skip_name = os.listdir(out_path)
 
     base_names = [name for name in os.listdir(base_path) if name.find('lut') == -1]
     for name in tqdm.tqdm(base_names):
+        if name in skip_name:
+            continue
+
         compare_names = [os.path.join(compare_path, name) for compare_path in compare_paths]
 
         is_exist = [not os.path.exists(compare_name) for compare_name in compare_names]
