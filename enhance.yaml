@@ -22,12 +22,13 @@ SOLVER:
     B2: 0.999
 
 MODEL:
-  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/image.lut.c18.1e-5/AdaptivePairedModel_final.pth"
-  DEVICE: "cpu"
+  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c18.m30/AdaptivePairedModel_final.pth"
+  DEVICE: "cuda"
   ARCH: "AdaptivePairedModel"
   LUT:
     SUPPLEMENT_NUMS: 18
     DIMS: 64
+    ZERO_LUT: True
   CLASSIFIER:
     PRETRAINED_PATH: ""
     ARCH: "ClassifierResnet"
@@ -42,6 +43,6 @@ DATALOADER:
   XT_TEST_TXT: "no_aug.test.txt"
 
 OUTPUT_LOG_NAME: "imagelut"
-OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/c18"
+OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/c18.m30"
 
 # '7001_0429.tif'

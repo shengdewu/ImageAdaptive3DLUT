@@ -6,7 +6,7 @@ from trilinear.TrilinearInterpolationModel import TrilinearInterpolationModel
 
 __all__ = [
     'Generator_3DLUT_identity',
-    'Generator_3DLUT_n_zero'
+    'Generator_3DLUT_supplement'
 ]
 
 
@@ -17,7 +17,7 @@ class Generator_3DLUT_identity(LutAbc):
         buffer = self.generate_identity_lut(dim)
 
         self._lut = torch.nn.Parameter(torch.from_numpy(buffer).requires_grad_(True))
-        self.tilinear_interpolation = TrilinearInterpolationModel()
+        self.trilinear_interpolation = TrilinearInterpolationModel()
         self.to(device)
         return
 
@@ -34,7 +34,7 @@ class Generator_3DLUT_identity(LutAbc):
         return lut3d
 
     def forward(self, x):
-        _, output = self.tilinear_interpolation(self._lut, x)
+        _, output = self.trilinear_interpolation(self._lut, x)
         return output
 
 
@@ -50,15 +50,17 @@ class Generator_3DLUT_zero(LutAbc):
 
     def forward(self, x):
         _, output = self.trilinear_interpolation(self._lut, x)
-
         return output
 
 
-class Generator_3DLUT_n_zero:
-    def __init__(self, dim=33, nums=2, device='cuda'):
+class Generator_3DLUT_supplement:
+    def __init__(self, dim=33, nums=2, device='cuda', is_zero=True):
         self.generator_3d_lut = dict()  # index, lutmodel
         for i in range(nums):
-            self.generator_3d_lut[i] = Generator_3DLUT_zero(dim, device)
+            if is_zero:
+                self.generator_3d_lut[i] = Generator_3DLUT_zero(dim, device)
+            else:
+                self.generator_3d_lut[i] = Generator_3DLUT_identity(dim, device)
         return
 
     def parameters(self):
@@ -66,19 +68,6 @@ class Generator_3DLUT_n_zero:
         for i, lut in self.generator_3d_lut.items():
             parameters.append(lut.parameters())
         return parameters
-
-    @staticmethod
-    def __get_model_state_dict(model):
-        if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
-            return model.module.state_dict()
-        return model.state_dict()
-
-    @staticmethod
-    def __load_model_state_dict(model, state_dict):
-        if isinstance(model, (torch.nn.parallel.DistributedDataParallel, torch.nn.parallel.DataParallel)):
-            model.module.load_state_dict(state_dict)
-        else:
-            model.load_state_dict(state_dict)
 
     def state_dict(self, offset=1):
         state_dict = dict()
@@ -88,7 +77,7 @@ class Generator_3DLUT_n_zero:
 
     def load_state_dict(self, state_dict:dict, offset=1):
         total_lut = len([key for key in state_dict.keys() if key >= offset])
-        assert total_lut == len(self.generator_3d_lut), 'Generator_3DLUT_n_zero owned number {} is not equal lut number {} that in the state_dict'.format(len(self.generator_3d_lut), total_lut)
+        assert total_lut == len(self.generator_3d_lut), 'Generator_3DLUT_SUPPLEMENT owned number {} is not equal lut number {} that in the state_dict'.format(len(self.generator_3d_lut), total_lut)
         for i, lut in self.generator_3d_lut.items():
             load_model_state_dict(lut, state_dict[i+offset])
         return

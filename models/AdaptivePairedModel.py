@@ -2,7 +2,7 @@ import torch
 import itertools
 import math
 from models.build import MODEL_ARCH_REGISTRY
-from models.lut.generator_3dlut import Generator_3DLUT_identity, Generator_3DLUT_n_zero
+from models.lut.generator_3dlut import Generator_3DLUT_identity, Generator_3DLUT_supplement
 from models.lut.total_variation import TV_3D
 from models.classifier.build import build_classifier
 import logging
@@ -20,7 +20,7 @@ class AdaptivePairedModel:
         self.lambda_monotonicity = cfg.SOLVER.LAMBDA_MONOTONICITY
 
         self.lut0 = Generator_3DLUT_identity(cfg.MODEL.LUT.DIMS, cfg.MODEL.DEVICE)
-        self.lut1 = Generator_3DLUT_n_zero(cfg.MODEL.LUT.DIMS, cfg.MODEL.LUT.SUPPLEMENT_NUMS, cfg.MODEL.DEVICE)
+        self.lut1 = Generator_3DLUT_supplement(cfg.MODEL.LUT.DIMS, cfg.MODEL.LUT.SUPPLEMENT_NUMS, cfg.MODEL.DEVICE, cfg.MODEL.LUT.ZERO_LUT)
 
         self.classifier = build_classifier(cfg)
         self.classifier.init_normal_classifier()
@@ -34,7 +34,7 @@ class AdaptivePairedModel:
         parameters.insert(0, self.lut0.parameters())
         parameters.insert(0, self.classifier.parameters())
         self.optimizer_G = torch.optim.Adam(itertools.chain(*parameters), lr=cfg.SOLVER.BASE_LR, betas=(cfg.SOLVER.ADAM.B1, cfg.SOLVER.ADAM.B2))
-        logging.getLogger(__name__).info("select {}/{} as trainer model".format(cfg.MODEL.ARCH, self.__class__))
+        logging.getLogger(__name__).info("select {}/{} as trainer model, select zero lut ({}) form supplement".format(cfg.MODEL.ARCH, self.__class__, cfg.MODEL.LUT.ZERO_LUT))
         return
 
     def __call__(self, x, gt, epoch=None):

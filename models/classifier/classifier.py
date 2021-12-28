@@ -5,6 +5,13 @@ from models.classifier.build import CLASSIFIER_ARCH_REGISTRY
 from models.functional import weights_init_normal
 import logging
 
+__all__ = [
+    'Classifier',
+    'ClassifierUnpaired',
+    'ClassifierResnet',
+    'ClassifierResnetSoftMax'
+]
+
 
 @CLASSIFIER_ARCH_REGISTRY.register()
 class Classifier(torch.nn.Module):
@@ -90,3 +97,14 @@ class ClassifierResnet(torch.nn.Module):
 
     def forward(self, x):
         return self.resnet(x)
+
+
+@CLASSIFIER_ARCH_REGISTRY.register()
+class ClassifierResnetSoftMax(ClassifierResnet):
+    def __init__(self, cfg):
+        super(ClassifierResnetSoftMax, self).__init__(cfg)
+        return
+
+    def forward(self, x):
+        c = self.resnet(x)
+        return torch.softmax(c, dim=1)
