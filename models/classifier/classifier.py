@@ -103,8 +103,9 @@ class ClassifierResnet(torch.nn.Module):
 class ClassifierResnetSoftMax(ClassifierResnet):
     def __init__(self, cfg):
         super(ClassifierResnetSoftMax, self).__init__(cfg)
+        self.softmax = torch.nn.Softmax(dim=1)
         return
 
     def forward(self, x):
         c = self.resnet(x)
-        return torch.softmax(c, dim=1)
+        return self.softmax(c)
