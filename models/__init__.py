@@ -1,4 +1,4 @@
 from .AdaptivePairedModel import AdaptivePairedModel
 from .AdaptiveUnpairedModel import AdaptiveUnPairedModel
 from .AdaptiveGLUnpairedModel import AdaptiveGLUnPairedModel
-
+from .AdaptivePerceptualPairedModel import AdaptivePerceptualPairedModel
