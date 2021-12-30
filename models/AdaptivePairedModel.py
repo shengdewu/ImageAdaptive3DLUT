@@ -18,6 +18,7 @@ class AdaptivePairedModel:
         self.device = cfg.MODEL.DEVICE
         self.lambda_smooth = cfg.SOLVER.LAMBDA_SMOOTH
         self.lambda_monotonicity = cfg.SOLVER.LAMBDA_MONOTONICITY
+        self.lambda_pixel = cfg.SOLVER.LAMBDA_PIXEL
 
         self.lut0 = Generator_3DLUT_identity(cfg.MODEL.LUT.DIMS, cfg.MODEL.DEVICE)
         self.lut1 = Generator_3DLUT_supplement(cfg.MODEL.LUT.DIMS, cfg.MODEL.LUT.SUPPLEMENT_NUMS, cfg.MODEL.DEVICE, cfg.MODEL.LUT.ZERO_LUT)
@@ -53,7 +54,7 @@ class AdaptivePairedModel:
         tv_cons = sum(tv1) + tv0
         mn_cons = sum(mn1) + mn0
 
-        loss = loss_pixel + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
+        loss = self.lambda_pixel * loss_pixel + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
 
         psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
