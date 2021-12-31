@@ -60,8 +60,11 @@ class CheckpointerManager:
     def resume_or_load(self, model_path, resume=True):
         model_state_dict, checkpointables = self.checkpointer.resume_or_load(model_path, resume=resume)
         start_iter = 0
-        if checkpointables is not None and resume and self.checkpointer.has_checkpoint():
-            start_iter = checkpointables.get("iteration", -1) + 1
-            checkpointables.pop("iteration")
+        if resume and self.checkpointer.has_checkpoint():
+            if checkpointables is not None:
+                start_iter = checkpointables.get("iteration", -1) + 1
+                checkpointables.pop("iteration")
+        else:
+            checkpointables = None
         return model_state_dict, checkpointables, start_iter
 
