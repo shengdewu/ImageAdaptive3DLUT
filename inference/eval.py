@@ -38,9 +38,11 @@ class Inference:
         self.output = cfg.OUTPUT_DIR
         return
 
-    def loop(self):
+    def loop(self, skip=False):
         format = 'jpg' if self.unnormalizing_value == 255 else 'tif'
-        skin_name = [name for name in os.listdir(self.output) if name.lower().endswith(format)]
+        skin_name = list()
+        if skip:
+            skin_name = [name for name in os.listdir(self.output) if name.lower().endswith(format)]
         for index in tqdm.tqdm(range(len(self.test_dataset))):
             data = DataLoader.fromlist([self.test_dataset[index]])
             input_name = data['input_name'][0]
