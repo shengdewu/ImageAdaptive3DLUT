@@ -1,10 +1,10 @@
 
 SOLVER:
   BASE_LR: 0.0002
-  MAX_ITER: 2
-  CHECKPOINT_PERIOD: 4
+  MAX_ITER: 50000
+  CHECKPOINT_PERIOD: 1
   MAX_KEEP: 16
-  IMS_PER_BATCH: 2
+  IMS_PER_BATCH: 4
   TEST_PER_BATCH: 1
   LAMBDA_GP: 10
   LAMBDA_PIXEL: 1  # for AdaptiveUnPairedModel 1000
@@ -23,10 +23,10 @@ SOLVER:
     B2: 0.999
 
 MODEL:
-  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c18.m30/AdaptivePairedModel_0494999.pth"
+  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c18.m20.5e4/AdaptivePairedModel_final.pth"
   VGG:
     VGG_PATH: "/mnt/data/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth"
-    VGG_LAYER: 21
+    VGG_LAYER: 10
   DEVICE: "cuda"
   ARCH: "AdaptivePairedModel"
   LUT:
@@ -37,9 +37,10 @@ MODEL:
     PRETRAINED_PATH: ""
     ARCH: "ClassifierResnet"
     RESNET_ARCH: "resnet50"
+    RESNET_NORMAL: "InstanceNorm2d"
 
 DATALOADER:
-  NUM_WORKERS: 1
+  NUM_WORKERS: 0
   DATA_PATH: "/mnt/data/data.set/xintu.data/xt.image.enhancement.540"
   DATASET: "ImageDatasetXinTuTif"
   XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
@@ -47,6 +48,6 @@ DATALOADER:
   XT_TEST_TXT: "no_aug.test.txt"
 
 OUTPUT_LOG_NAME: "imagelut"
-OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/c18.m30"
+OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/imagelut.c18.m20.5e4.test"
 
 # '7001_0429.tif'

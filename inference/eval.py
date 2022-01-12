@@ -1,6 +1,6 @@
 import logging
 from trilinear.TrilinearInterpolationModel import TrilinearInterpolationModel
-from engine.checkpoint.CheckpointerStateDict import CheckpointerStateDict
+from engine.checkpoint.checkpoint_state_dict import CheckPointStateDict
 from models.build import build_model
 import engine.comm as comm
 from engine.log.logger import setup_logger
@@ -30,7 +30,7 @@ class Inference:
 
         self.unnormalizing_value = self.test_dataset.unnormalizing_value() if hasattr(self.test_dataset, 'unnormalizing_value') else 255
 
-        self.checkpointer = CheckpointerStateDict(save_dir='', save_to_disk=False)
+        self.checkpointer = CheckPointStateDict(save_dir='', save_to_disk=False)
 
         self.triliear = TrilinearInterpolationModel().to(cfg.MODEL.DEVICE)
         self.device = cfg.MODEL.DEVICE

@@ -1,6 +1,6 @@
 import logging
 from dataloader.dataloader import DataLoader
-from engine.checkpoint.CheckpointerManager import CheckpointerManager
+from engine.checkpoint.checkpoint_manager import CheckPointerManager
 from models.build import build_model
 import engine.comm as comm
 from engine.log.logger import setup_logger
@@ -37,7 +37,7 @@ class AdaptiveTrainer:
 
         self.model.enable_distribute(cfg)
 
-        self.checkpoint = CheckpointerManager(max_iter=cfg.SOLVER.MAX_ITER,
+        self.checkpoint = CheckPointerManager(max_iter=cfg.SOLVER.MAX_ITER,
                                               save_dir=cfg.OUTPUT_DIR,
                                               check_period=cfg.SOLVER.CHECKPOINT_PERIOD,
                                               max_keep=cfg.SOLVER.MAX_KEEP,
