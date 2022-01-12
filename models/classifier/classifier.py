@@ -4,6 +4,7 @@ from models.functional import discriminator_block
 from models.classifier.build import CLASSIFIER_ARCH_REGISTRY
 from models.functional import weights_init_normal
 import logging
+from engine.checkpoint.functional import load_model_state_dict
 
 __all__ = [
     'Classifier',
@@ -80,17 +81,25 @@ class ClassifierUnpaired(torch.nn.Module):
 class ClassifierResnet(torch.nn.Module):
     def __init__(self, cfg):
         super(ClassifierResnet, self).__init__()
-        self.resnet, self.init = create_resnet(num_classes=cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1,
-                                               device=cfg.MODEL.DEVICE,
-                                               arch=cfg.MODEL.CLASSIFIER.RESNET_ARCH,
-                                               model_path=cfg.MODEL.CLASSIFIER.PRETRAINED_PATH,
-                                               default_log_name=cfg.OUTPUT_LOG_NAME)
+        kwargs = dict()
+        kwargs['num_classes'] = cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1
+        if cfg.MODEL.CLASSIFIER.RESNET_NORMAL == "InstanceNorm2d":
+            kwargs['norm_layer'] = torch.nn.InstanceNorm2d
+
+        self.resnet = create_resnet(arch=cfg.MODEL.CLASSIFIER.RESNET_ARCH, **kwargs)
+        self.external_init = True
+        if isinstance(cfg.MODEL.CLASSIFIER.PRETRAINED_PATH, str) and cfg.MODEL.CLASSIFIER.PRETRAINED_PATH != '':
+            state_dict = torch.load(cfg.MODEL.CLASSIFIER.PRETRAINED_PATH, 'cpu' if cfg.MODEL.DEVICE == 'cpu' else 'cuda')
+            load_model_state_dict(self.resnet, state_dict, cfg.OUTPUT_LOG_NAME)
+            logging.getLogger(cfg.OUTPUT_LOG_NAME).info('load model {} from resnet'.format(cfg.MODEL.CLASSIFIER.PRETRAINED_PATH))
+            self.external_init = False
+
         self.to(cfg.MODEL.DEVICE)
         logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
     def init_normal_classifier(self):
-        if self.init:
+        if self.external_init:
             self.apply(weights_init_normal)
         torch.nn.init.constant_(self.resnet.fc.bias.data, 1.0)  # last layer
         return

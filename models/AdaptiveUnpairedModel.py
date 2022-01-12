@@ -7,7 +7,7 @@ from models.AdaptivePairedModel import AdaptivePairedModel
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
-from engine.functional import get_model_state_dict, load_model_state_dict
+from engine.checkpoint.functional import get_model_state_dict, load_model_state_dict, load_checkpoint_state_dict
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -107,8 +107,8 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
         return addition
 
     def load_addition_state_dict(self, state_dict: dict):
-        load_model_state_dict(self.optimizer_G, state_dict['opt_g'])
-        load_model_state_dict(self.optimizer_D, state_dict['opt_d'])
+        load_checkpoint_state_dict(self.optimizer_G, state_dict['opt_g'])
+        load_checkpoint_state_dict(self.optimizer_D, state_dict['opt_d'])
         load_model_state_dict(self.discriminator, state_dict['dis'])
         return
 

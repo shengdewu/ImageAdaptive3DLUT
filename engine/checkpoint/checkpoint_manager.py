@@ -1,4 +1,4 @@
-from engine.checkpoint.CheckpointerStateDict import CheckpointerStateDict
+from engine.checkpoint.checkpoint_state_dict import CheckPointStateDict
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
 from fvcore.common.file_io import PathManager
 from engine.log.logger import setup_logger
@@ -6,7 +6,7 @@ import engine.comm as comm
 from collections import OrderedDict
 
 
-class CheckpointerManager:
+class CheckPointerManager:
     def __init__(self,
                  max_iter: Optional[int] = None,
                  save_dir: str = '',
@@ -17,9 +17,9 @@ class CheckpointerManager:
 
         setup_logger(output=save_dir, distributed_rank=comm.get_rank(), name=__name__)
 
-        self.checkpointer = CheckpointerStateDict(save_dir,
-                                                  save_to_disk=save_to_disk,
-                                                  )
+        self.checkpointer = CheckPointStateDict(save_dir,
+                                                save_to_disk=save_to_disk,
+                                                )
         self.check_period = check_period
         self.max_iter = max_iter
         self.file_prefix = file_prefix
@@ -39,7 +39,7 @@ class CheckpointerManager:
         iteration = int(iteration)
 
         if (iteration+1) % self.check_period == 0:
-            state_dict, checkpointables = CheckpointerManager.compose_state_dict(model, iteration)
+            state_dict, checkpointables = CheckPointerManager.compose_state_dict(model, iteration)
 
             name = "{}_{:07d}".format(self.file_prefix, iteration)
             self.checkpointer.save(name, state_dict, **checkpointables)
@@ -52,7 +52,7 @@ class CheckpointerManager:
 
         if self.max_iter is not None:
             if iteration >= self.max_iter - 1:
-                state_dict, checkpointables = CheckpointerManager.compose_state_dict(model, iteration)
+                state_dict, checkpointables = CheckPointerManager.compose_state_dict(model, iteration)
                 name = "{}_final".format(self.file_prefix, iteration)
                 self.checkpointer.save(name, state_dict, **checkpointables)
         return

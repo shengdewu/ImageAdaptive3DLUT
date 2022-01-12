@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c18.p5.m20.5e4']
     compare_paths = [os.path.join(root_path, name) for name in compare_name]
-    out_path = os.path.join(out_root, '-'.join(compare_name))
+    out_path = os.path.join(out_root, 'compare-{}'.format('-'.join(compare_name)))
     compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=False)
 
     rhd = open('./error.txt', mode='r')

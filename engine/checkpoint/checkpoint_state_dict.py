@@ -7,7 +7,7 @@ import logging
 import numpy as np
 
 
-class CheckpointerStateDict:
+class CheckPointStateDict:
     def __init__(
         self,
         save_dir: str = "",

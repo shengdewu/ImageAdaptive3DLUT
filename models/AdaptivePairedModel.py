@@ -8,7 +8,7 @@ from models.classifier.build import build_classifier
 import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
-from engine.functional import get_model_state_dict, load_model_state_dict
+from engine.checkpoint.functional import get_model_state_dict, load_model_state_dict, load_checkpoint_state_dict
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -126,7 +126,7 @@ class AdaptivePairedModel:
         return addition
 
     def load_addition_state_dict(self, state_dict: dict):
-        load_model_state_dict(self.optimizer_G, state_dict['opt_g'])
+        load_checkpoint_state_dict(self.optimizer_G, state_dict['opt_g'])
         return
 
     def enable_distribute(self, cfg):
