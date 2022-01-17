@@ -29,7 +29,7 @@ class AdaptivePairedModel:
         self.tv3 = TV_3D(cfg.MODEL.LUT.DIMS, cfg.MODEL.DEVICE)
 
         # Loss functions
-        self.criterion_pixelwise = torch.nn.MSELoss()
+        self.criterion_pixelwise = torch.nn.MSELoss().to(self.device)
 
         parameters = self.lut1.parameters()
         parameters.insert(0, self.lut0.parameters())

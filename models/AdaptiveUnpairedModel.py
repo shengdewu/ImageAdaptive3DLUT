@@ -23,7 +23,7 @@ class AdaptiveUnPairedModel(AdaptivePairedModel):
         self.discriminator.apply(weights_init_normal)
 
         # Loss functions
-        self.criterion_GAN = torch.nn.MSELoss()
+        self.criterion_GAN = torch.nn.MSELoss().to(self.device)
 
         self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=cfg.SOLVER.BASE_LR, betas=(cfg.SOLVER.ADAM.B1, cfg.SOLVER.ADAM.B2))
         return
