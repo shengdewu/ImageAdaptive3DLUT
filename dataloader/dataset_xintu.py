@@ -47,6 +47,12 @@ class ImageDatasetXinTu(Dataset):
         self.test_input_files = search_files(root, cfg.DATALOADER.XT_TEST_TXT, self.skip_name)
 
         self.set1_input_files = self.set1_input_files + self.set2_input_files
+
+        test_max_nums = cfg.DATALOADER.get('XT_TEST_MAX_NUMS', len(self.test_input_files))
+        if 0 < test_max_nums < len(self.test_input_files):
+            index = [i for i in range(len(self.test_input_files))]
+            index = np.random.choice(index, test_max_nums)
+            self.test_input_files = [self.test_input_files[i] for i in index]
         return
 
     def __getitem__(self, index):
@@ -114,6 +120,11 @@ class ImageDatasetXinTuUnpaired(Dataset):
         self.set2_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_LABEL_TXT, self.skip_name)
         self.test_input_files = search_files(root, cfg.DATALOADER.XT_TEST_TXT, self.skip_name)
 
+        test_max_nums = cfg.DATALOADER.get('XT_TEST_MAX_NUMS', len(self.test_input_files))
+        if 0 < test_max_nums < len(self.test_input_files):
+            index = [i for i in range(len(self.test_input_files))]
+            index = np.random.choice(index, test_max_nums)
+            self.test_input_files = [self.test_input_files[i] for i in index]
         return
 
     def __getitem__(self, index):
@@ -395,7 +406,7 @@ def match(data_path):
 def create_train_label(root_path):
     def label(root_path, paire_name, flag=''):
         index = [i for i in range(len(paire_name))]
-        test_name_index = random.sample(index, int(0.02 * len(paire_name)))
+        test_name_index = random.sample(index, int(0.2 * len(paire_name)))
 
         assert len(test_name_index) == len(set(test_name_index)), 'the test name index duplication'
 

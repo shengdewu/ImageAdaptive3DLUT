@@ -1,53 +1,54 @@
 
 SOLVER:
   BASE_LR: 0.0002
-  MAX_ITER: 50000
+  MAX_ITER: 10000
   CHECKPOINT_PERIOD: 1
   MAX_KEEP: 16
-  IMS_PER_BATCH: 4
-  TEST_PER_BATCH: 1
+  IMS_PER_BATCH: 2
+  TEST_PER_BATCH: 10
   LAMBDA_GP: 10
-  LAMBDA_PIXEL: 1  # for AdaptiveUnPairedModel 1000
+  LAMBDA_PIXEL: 1.0  # for AdaptiveUnPairedModel 1000
 #  """
 #  1.the LAMBDA_SMOOTH should be small since a heavy smoothness penalty will result in flat 3D LUTs while limited transformation flexibility
 #  2. the LAMBDA_MONOTONICITY , it can be relatively stronger, can help to update the parameters that may be not be activated by input data
 #  3. the LAMBDA_SMOOTH more than 0.0001 leads to worse PSNR , but PSNR is insensitive to the choice LAMBDA_MONOTONICITY
 #  4. base LAMBDA_SMOOTH and LAMBDA_MONOTONICITY (0.0001, 10)
 #  """
-  LAMBDA_SMOOTH: 1e-5  # 0 0.00001 0.0001 0.001 0.01 0.1
+  LAMBDA_SMOOTH: 0.0001  # 0 0.00001 0.0001 0.001 0.01 0.1
   LAMBDA_MONOTONICITY: 10.0 # 0.1 0 1.0 10 100 1000
-  LAMBDA_PERCEPTUAL: 1e-4  # value similar LAMBDA_SMOOTH
+  LAMBDA_PERCEPTUAL: 0.05  # value similar LAMBDA_SMOOTH
   N_CRITIC: 1
   ADAM:
     B1: 0.9
     B2: 0.999
 
 MODEL:
-  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c18.m20.5e4/AdaptivePairedModel_final.pth"
+  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c12.m10.1e4.vgg/AdaptivePerceptualPairedModel_0024999.pth"
   VGG:
     VGG_PATH: "/mnt/data/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth"
-    VGG_LAYER: 10
+    VGG_LAYER: 14
   DEVICE: "cuda"
-  ARCH: "AdaptivePairedModel"
+  ARCH: AdaptivePerceptualPairedModel
   LUT:
-    SUPPLEMENT_NUMS: 18
+    SUPPLEMENT_NUMS: 12
     DIMS: 64
     ZERO_LUT: True
   CLASSIFIER:
-    PRETRAINED_PATH: ""
-    ARCH: "ClassifierResnet"
-    RESNET_ARCH: "resnet50"
-    RESNET_NORMAL: "InstanceNorm2d"
+    PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet50-0676ba61.pth"
+    ARCH: ClassifierResnet
+    RESNET_ARCH: resnet50
+    RESNET_NORMAL: ''
 
 DATALOADER:
   NUM_WORKERS: 0
   DATA_PATH: "/mnt/data/data.set/xintu.data/xt.image.enhancement.540"
   DATASET: "ImageDatasetXinTuTif"
-  XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
-  XT_TRAIN_LABEL_TXT: "no_aug.train_label.txt"
-  XT_TEST_TXT: "no_aug.test.txt"
+  XT_TRAIN_INPUT_TXT: "old_no_aug.test.txt"
+  XT_TRAIN_LABEL_TXT: "old_no_aug.test.txt"
+  XT_TEST_TXT: "old_no_aug.test.txt"
+  XT_TEST_MAX_NUMS: -1
 
 OUTPUT_LOG_NAME: "imagelut"
-OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/imagelut.c18.m20.5e4.test"
+OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/imagelut.c12.m10.1e4.vgg"
 
 # '7001_0429.tif'
