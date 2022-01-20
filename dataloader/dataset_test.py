@@ -25,12 +25,12 @@ class ImageDatasetTest(Dataset):
     def __getitem__(self, index):
 
         input_file = self.test_input_files[index % len(self.test_input_files)]
-        img_name = os.path.split(input_file[0])[-1]
+        img_name = os.path.split(input_file)[-1]
         img_input = cv2.cvtColor(cv2.imread(input_file, -1), cv2.COLOR_BGR2RGB)
 
         img_input = TF_x.to_tensor(img_input)
 
-        return {"A_input": img_input, 'A_exptC': img_input, "input_name": img_name}
+        return {"A_input": img_input, "input_name": img_name}
 
     def __len__(self):
         return len(self.test_input_files)
