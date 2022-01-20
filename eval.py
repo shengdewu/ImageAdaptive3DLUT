@@ -26,16 +26,19 @@ if __name__ == '__main__':
         f = open(os.path.join(model_path_root, 'config.yaml'), mode='r')
         hcfg = CfgNode().load_cfg(f)
         f.close()
-        cfg.SOLVER.LAMBDA_PIXEL = hcfg.SOLVER.LAMBDA_PIXEL
-        cfg.SOLVER.LAMBDA_SMOOTH = hcfg.SOLVER.LAMBDA_SMOOTH
-        cfg.SOLVER.LAMBDA_MONOTONICITY = hcfg.SOLVER.LAMBDA_MONOTONICITY
-        # cfg.MODEL.VGG.VGG_LAYER = hcfg.MODEL.VGG.VGG_LAYER
-        cfg.MODEL.ARCH = hcfg.MODEL.ARCH
-        cfg.MODEL.LUT.SUPPLEMENT_NUMS = hcfg.MODEL.LUT.SUPPLEMENT_NUMS
-        cfg.MODEL.LUT.DIMS = hcfg.MODEL.LUT.DIMS
-        cfg.MODEL.LUT.ZERO_LUT = hcfg.MODEL.LUT.ZERO_LUT
-        cfg.MODEL.CLASSIFIER.ARCH = hcfg.MODEL.CLASSIFIER.ARCH
-        cfg.MODEL.CLASSIFIER.RESNET_ARCH = hcfg.MODEL.CLASSIFIER.RESNET_ARCH
+
+        VGG_PATH = cfg.MODEL.VGG.VGG_PATH
+        WEIGHTS = cfg.MODEL.WEIGHTS
+        PRETRAINED_PATH = cfg.MODEL.CLASSIFIER.PRETRAINED_PATH
+        device = cfg.MODEL.DEVICE
+
+        cfg.SOLVER = hcfg.SOLVER
+        cfg.MODEL = hcfg.MODEL
+
+        cfg.MODEL.VGG.VGG_PATH = VGG_PATH
+        cfg.MODEL.WEIGHTS = WEIGHTS
+        cfg.MODEL.CLASSIFIER.PRETRAINED_PATH = PRETRAINED_PATH
+        cfg.MODEL.DEVICE = device
     cfg.freeze()
 
     eval = Inference(cfg)

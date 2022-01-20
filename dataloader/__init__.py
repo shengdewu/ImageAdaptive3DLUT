@@ -2,3 +2,4 @@ from .datasets_xyz import ImageDataset_XYZ, ImageDataset_XYZ_unpaired
 from .datasets_rgb import ImageDataset_sRGB, ImageDataset_sRGB_unpaired
 from .dataset_hdr import ImageDataset_HDRplus, ImageDataset_HDRplus_unpaired
 from .dataset_xintu import ImageDatasetXinTu, ImageDatasetXinTuUnpaired
+from .dataset_test import ImageDatasetTest

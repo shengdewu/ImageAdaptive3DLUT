@@ -49,11 +49,11 @@ class Inference:
             if input_name in skin_name:
                 continue
             real_A = data["A_input"].to(self.device)
-            real_B = data["A_exptC"].to(self.device)
 
             combine_lut = self.model.generate_lut(real_A)
             _, fake_B = self.triliear(combine_lut, real_A)
-            img_sample = torch.cat((real_A, fake_B, real_B), -1)
+
+            img_sample = torch.cat((real_A, fake_B, data["A_exptC"].to(self.device)), -1)
 
             Inference.save_image(img_sample, '{}/{}'.format(self.output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
             pos = input_name.lower().rfind('.{}'.format(format))
