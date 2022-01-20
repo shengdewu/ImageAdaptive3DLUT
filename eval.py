@@ -5,6 +5,7 @@ from inference.eval import Inference, compare
 import torch
 import shutil
 from fvcore.common.config import CfgNode
+import re
 
 
 if __name__ == '__main__':
@@ -15,7 +16,9 @@ if __name__ == '__main__':
     cfg.merge_from_list(args.opts)
     cfg.defrost()
     weights = cfg.MODEL.WEIGHTS
-    model_path_root = weights[0: weights.rfind('/AdaptivePairedModel')]
+    pattern = re.compile(r'Adaptive.*\.pth')
+    dg = pattern.search(weights)
+    model_path_root = weights[: dg.span()[0]]
 
     if os.path.exists(os.path.join(model_path_root, 'config.yaml')):
         print('use {}'.format(os.path.join(model_path_root, 'config.yaml')))
@@ -46,7 +49,7 @@ if __name__ == '__main__':
 
     base_path = os.path.join(root_path, 'base')
 
-    compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c18.p5.m20.5e4']
+    compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c12.m10.1e4.vgg']
     compare_paths = [os.path.join(root_path, name) for name in compare_name]
     out_path = os.path.join(out_root, 'compare-{}'.format('-'.join(compare_name)))
     compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=False)
