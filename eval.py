@@ -8,8 +8,7 @@ from fvcore.common.config import CfgNode
 import re
 
 
-if __name__ == '__main__':
-
+def merge_config():
     args = default_argument_parser().parse_args()
     cfg = get_cfg()
     cfg.merge_from_file(args.config_file)
@@ -20,10 +19,11 @@ if __name__ == '__main__':
     dg = pattern.search(weights)
     model_path_root = weights[: dg.span()[0]]
 
-    if os.path.exists(os.path.join(model_path_root, 'config.yaml')):
-        print('use {}'.format(os.path.join(model_path_root, 'config.yaml')))
+    train_config = os.path.join(model_path_root, 'config.yaml')
+    if os.path.exists(train_config):
+        print('use {}'.format(train_config))
 
-        f = open(os.path.join(model_path_root, 'config.yaml'), mode='r')
+        f = open(train_config, mode='r')
         hcfg = CfgNode().load_cfg(f)
         f.close()
 
@@ -40,22 +40,33 @@ if __name__ == '__main__':
         cfg.MODEL.CLASSIFIER.PRETRAINED_PATH = PRETRAINED_PATH
         cfg.MODEL.DEVICE = device
     cfg.freeze()
+    return cfg
 
+
+def inference(cfg):
     eval = Inference(cfg)
     eval.resume_or_load()
     eval.loop()
 
     torch.cuda.empty_cache()
+    return
 
-    root_path = '/home/shengdewu/data_shadow/train.output/imagelut.test'
+
+if __name__ == '__main__':
+    cfg = merge_config()
+    inference(cfg)
+
+    root_path = cfg.OUTPUT_DIR
+    root_path = root_path[:root_path.rfind('/')]
+
     out_root = '/home/shengdewu/data_shadow/train.output/imagelut.test'
 
     base_path = os.path.join(root_path, 'base')
 
-    compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c12.m10.1e4.vgg']
+    compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c12.m10.1e4.vgg.rin.p2']
     compare_paths = [os.path.join(root_path, name) for name in compare_name]
     out_path = os.path.join(out_root, 'compare-{}'.format('-'.join(compare_name)))
-    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=False)
+    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path)
 
     rhd = open('./error.txt', mode='r')
     error = [line.strip('\n') for line in rhd.readlines()]
