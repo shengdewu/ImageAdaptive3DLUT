@@ -18,7 +18,7 @@ class ImageDatasetTest(Dataset):
         test_max_nums = cfg.DATALOADER.get('XT_TEST_MAX_NUMS', len(self.test_input_files))
         if 0 < test_max_nums < len(self.test_input_files):
             index = [i for i in range(len(self.test_input_files))]
-            index = np.random.choice(index, test_max_nums)
+            index = np.random.choice(index, test_max_nums, replace=False)
             self.test_input_files = [self.test_input_files[i] for i in index]
         return
 
