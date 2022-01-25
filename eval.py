@@ -43,18 +43,22 @@ def merge_config():
     return cfg
 
 
-def inference(cfg):
+def inference(cfg, special_name=None):
     eval = Inference(cfg)
     eval.resume_or_load()
-    eval.loop()
+    eval.loop(skip=False, special_name=special_name)
 
     torch.cuda.empty_cache()
     return
 
 
 if __name__ == '__main__':
+    rhd = open('./error.txt', mode='r')
+    error_names = ['{}.tif'.format(line.strip('\n')) for line in rhd.readlines()]
+    rhd.close()
+
     cfg = merge_config()
-    inference(cfg)
+    inference(cfg, error_names)
 
     root_path = cfg.OUTPUT_DIR
     root_path = root_path[:root_path.rfind('/')]
@@ -66,14 +70,10 @@ if __name__ == '__main__':
     compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c12.m10.1e4.vgg.rin.p2']
     compare_paths = [os.path.join(root_path, name) for name in compare_name]
     out_path = os.path.join(out_root, 'compare-{}'.format('-'.join(compare_name)))
-    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path)
-
-    rhd = open('./error.txt', mode='r')
-    error = [line.strip('\n') for line in rhd.readlines()]
-    rhd.close()
+    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=False)
 
     os.makedirs(os.path.join(out_path, 'check'), exist_ok=True)
-    for name in error:
-        if not os.path.exists(os.path.join(out_path, '{}.tif'.format(name))):
+    for name in error_names:
+        if not os.path.exists(os.path.join(out_path, name)):
             continue
-        shutil.copy2(os.path.join(out_path, '{}.tif'.format(name)), os.path.join(out_path, 'check', '{}.tif'.format(name)))
+        shutil.copy2(os.path.join(out_path, name), os.path.join(out_path, 'check', name))
