@@ -38,7 +38,10 @@ class Inference:
         self.output = cfg.OUTPUT_DIR
         return
 
-    def loop(self, skip=False):
+    def loop(self, skip=False, special_name=None):
+        if special_name is not None:
+            assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
+
         format = 'jpg' if self.unnormalizing_value == 255 else 'tif'
         skin_name = list()
         if skip:
@@ -46,6 +49,8 @@ class Inference:
         for index in tqdm.tqdm(range(len(self.test_dataset))):
             data = DataLoader.fromlist([self.test_dataset[index]])
             input_name = data['input_name'][0]
+            if special_name is not None and input_name not in special_name:
+                continue
             if input_name in skin_name:
                 continue
             real_A = data["A_input"].to(self.device)
@@ -56,8 +61,8 @@ class Inference:
             img_sample = torch.cat((real_A, fake_B, data["A_exptC"].to(self.device)), -1)
 
             Inference.save_image(img_sample, '{}/{}'.format(self.output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
-            pos = input_name.lower().rfind('.{}'.format(format))
-            Inference.save_lut(combine_lut.detach().cpu().numpy(), '{}/{}.lut.{}'.format(self.output, input_name[:pos], input_name[pos + 1:]), self.unnormalizing_value)
+            # pos = input_name.lower().rfind('.{}'.format(format))
+            # Inference.save_lut(combine_lut.detach().cpu().numpy(), '{}/{}.lut.{}'.format(self.output, input_name[:pos], input_name[pos + 1:]), self.unnormalizing_value)
 
             # fake_B = torch.round(fake_B * self.unnormalizing_value)
             # real_B = torch.round(real_B * self.unnormalizing_value)
@@ -133,7 +138,10 @@ class KRResize:
         return 'RandomResize'
 
 
-def compare(base_path, compare_paths, out_path, skip=False):
+def compare(base_path, compare_paths, out_path, skip=False, special_name=None):
+    if special_name is not None:
+        assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
+
     os.makedirs(out_path, exist_ok=True)
     skip_name = list()
     if skip:
@@ -141,6 +149,9 @@ def compare(base_path, compare_paths, out_path, skip=False):
 
     base_names = [name for name in os.listdir(base_path) if name.find('lut') == -1]
     for name in tqdm.tqdm(base_names):
+        if special_name is not None and name not in special_name:
+            continue
+
         if name in skip_name:
             continue
 
