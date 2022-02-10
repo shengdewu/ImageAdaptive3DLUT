@@ -18,7 +18,7 @@ import tqdm
 class Inference:
     criterion_pixelwise = torch.nn.MSELoss()
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, tif=True):
         setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=__name__)
 
         self.model = build_model(cfg)
@@ -28,7 +28,10 @@ class Inference:
 
         logging.getLogger(__name__).info('create dataset {}, load {} test data'.format(cfg.DATALOADER.DATASET, len(self.test_dataset)))
 
-        self.unnormalizing_value = self.test_dataset.unnormalizing_value() if hasattr(self.test_dataset, 'unnormalizing_value') else 255
+        if tif:
+            self.unnormalizing_value = 65535
+        else:
+            self.unnormalizing_value = 255
 
         self.checkpointer = CheckPointStateDict(save_dir='', save_to_disk=False)
 
@@ -49,6 +52,9 @@ class Inference:
         for index in tqdm.tqdm(range(len(self.test_dataset))):
             data = DataLoader.fromlist([self.test_dataset[index]])
             input_name = data['input_name'][0]
+            if input_name.endswith('tif') and format != 'tif':
+                input_name = '{}.{}'.format(input_name[:input_name.rfind('.tif')], format)
+
             if special_name is not None and input_name not in special_name:
                 continue
             if input_name in skin_name:

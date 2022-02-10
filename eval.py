@@ -6,6 +6,8 @@ import torch
 import shutil
 from fvcore.common.config import CfgNode
 import re
+import cv2
+import numpy as np
 
 
 def merge_config():
@@ -44,33 +46,45 @@ def merge_config():
 
 
 def inference(cfg, special_name=None):
-    eval = Inference(cfg)
+    eval = Inference(cfg, tif=False)
     eval.resume_or_load()
-    eval.loop(skip=False, special_name=special_name)
+    eval.loop(skip=True, special_name=special_name)
 
     torch.cuda.empty_cache()
     return
 
 
+def convert2jpg(path):
+    base_names = [name for name in os.listdir(path) if name.find('lut') == -1 and name.lower().endswith('tif')]
+    skip_names = [name for name in os.listdir(path) if name.lower().endswith('jpg')]
+    for name in base_names:
+        new_name = '{}.jpg'.format(name[:name.rfind('.tif')])
+        if new_name in skip_names:
+            continue
+        img = cv2.imread(os.path.join(base_path, name), cv2.IMREAD_UNCHANGED)
+        img = np.clip((img / 65535) * 255 + 0.5, 0, 255).astype(np.uint8)
+        cv2.imwrite('{}/{}'.format(path, new_name), img)
+
+
 if __name__ == '__main__':
     rhd = open('./error.txt', mode='r')
-    error_names = ['{}.tif'.format(line.strip('\n')) for line in rhd.readlines()]
+    error_names = ['{}.jpg'.format(line.strip('\n')) for line in rhd.readlines()]
     rhd.close()
 
     cfg = merge_config()
-    inference(cfg, error_names)
+    inference(cfg, special_name=None)
 
     root_path = cfg.OUTPUT_DIR
     root_path = root_path[:root_path.rfind('/')]
 
-    out_root = '/home/shengdewu/data_shadow/train.output/imagelut.test'
-
     base_path = os.path.join(root_path, 'base')
+    convert2jpg(base_path)
+    special_name = [name for name in os.listdir(base_path) if name.lower().endswith('jpg')]
 
-    compare_name = ['imagelut.c18.m20.5e4', 'imagelut.c12.m10.1e4.vgg.rin.p2']
+    compare_name = ['imagelut.c12.m20.1e4.vgg.rin.p6']
     compare_paths = [os.path.join(root_path, name) for name in compare_name]
-    out_path = os.path.join(out_root, 'compare-{}'.format('-'.join(compare_name)))
-    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=False)
+    out_path = os.path.join(root_path, 'compare-{}'.format('-'.join(compare_name)))
+    compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=True, special_name=special_name)
 
     os.makedirs(os.path.join(out_path, 'check'), exist_ok=True)
     for name in error_names:
