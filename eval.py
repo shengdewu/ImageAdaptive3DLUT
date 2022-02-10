@@ -61,7 +61,7 @@ def convert2jpg(path):
         new_name = '{}.jpg'.format(name[:name.rfind('.tif')])
         if new_name in skip_names:
             continue
-        img = cv2.imread(os.path.join(base_path, name), cv2.IMREAD_UNCHANGED)
+        img = cv2.imread(os.path.join(path, name), cv2.IMREAD_UNCHANGED)
         img = np.clip((img / 65535) * 255 + 0.5, 0, 255).astype(np.uint8)
         cv2.imwrite('{}/{}'.format(path, new_name), img)
 
