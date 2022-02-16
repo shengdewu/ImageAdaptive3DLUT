@@ -33,6 +33,9 @@ def search_files(root, txt, skip_name):
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTu(Dataset):
     def __init__(self, cfg, mode="train"):
+
+        self.brightness = cfg.INPUT.BRIGHTNESS
+
         root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
@@ -107,6 +110,9 @@ class ImageDatasetXinTu(Dataset):
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTuUnpaired(Dataset):
     def __init__(self, cfg, mode="train"):
+
+        self.brightness = cfg.INPUT.BRIGHTNESS
+
         root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
@@ -233,8 +239,9 @@ class ImageDatasetXinTuTif(ImageDatasetXinTu):
                 img_input = TF_x.hflip(img_input)
                 img_exptC = TF_x.hflip(img_exptC)
 
-            a = np.random.uniform(0.8, 1.2)
-            img_input = TF_x.adjust_brightness(img_input, a)
+            if self.brightness.ENABLE:
+                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
+                img_input = TF_x.adjust_contrast(img_input, a)
 
         img_input = TF_x.to_tensor(img_input)
         img_exptC = TF_x.to_tensor(img_exptC)
@@ -302,8 +309,9 @@ class ImageDatasetXinTuUnpairedTif(ImageDatasetXinTuUnpaired):
             #    img_exptC = TF_x.vflip(img_exptC)
             #    img2 = TF_x.vflip(img2)
 
-            a = np.random.uniform(0.6, 1.4)
-            img_input = TF_x.adjust_brightness(img_input, a)
+            if self.brightness.ENABLE:
+                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
+                img_input = TF_x.adjust_contrast(img_input, a)
 
         img_input = TF_x.to_tensor(img_input)
         img_exptC = TF_x.to_tensor(img_exptC)

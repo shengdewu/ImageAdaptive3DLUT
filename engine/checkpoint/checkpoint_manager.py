@@ -1,9 +1,9 @@
 from engine.checkpoint.checkpoint_state_dict import CheckPointStateDict
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
+from typing import Optional
 from fvcore.common.file_io import PathManager
 from engine.log.logger import setup_logger
 import engine.comm as comm
-from collections import OrderedDict
+from engine.model.model import BaseModel
 
 
 class CheckPointerManager:
@@ -28,14 +28,14 @@ class CheckPointerManager:
         return
 
     @staticmethod
-    def compose_state_dict(model, iteration):
+    def compose_state_dict(model: BaseModel, iteration):
         checkpointables = model.get_addition_state_dict()
         state_dict = model.get_state_dict()
         additional_state = {"iteration": iteration}
         checkpointables.update(additional_state)
         return state_dict, checkpointables
 
-    def save(self, model, iteration):
+    def save(self, model: BaseModel, iteration):
         iteration = int(iteration)
 
         if (iteration+1) % self.check_period == 0:

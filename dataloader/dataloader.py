@@ -1,10 +1,5 @@
 import torch.utils.data
 from dataloader.build import build_dataset
-from engine.samplers.distributed_sampler import TrainingSampler
-from engine.data.common import ToIterableDataset
-import multiprocessing
-import logging
-import sys
 
 
 class DataLoader:
@@ -76,84 +71,3 @@ class DataLoader:
         train_dataset = build_dataset(cfg, model='train')
         test_dataset = build_dataset(cfg, model='test')
         return train_dataset, test_dataset
-
-
-    @staticmethod
-    def create_sampler_dataloader(dataset, batch_size=1, num_workers=1, default_log_name=None):
-        sampler = torch.utils.data.RandomSampler(dataset)
-
-        max_workers = multiprocessing.cpu_count()
-        num_workers = num_workers if num_workers < max_workers else max_workers
-
-        if default_log_name is not None:
-            logging.getLogger(default_log_name).info('{}: num workers={} batch size={}'.format(sys._getframe().f_code.co_name, num_workers, batch_size))
-
-        return torch.utils.data.DataLoader(
-                                    dataset=dataset,
-                                    batch_size=batch_size,
-                                    shuffle=False,
-                                    num_workers=num_workers,
-                                    pin_memory=True,
-                                    collate_fn=DataLoader.collate_fn,
-                                    drop_last=True,
-                                    sampler=sampler)
-
-    @staticmethod
-    def create_distribute_sampler_dataloder(dataset, batch_size, rank, world_size, num_workers, default_log_name=None):
-        sampler = torch.utils.data.distributed.DistributedSampler(dataset, num_replicas=world_size, rank=rank)
-
-        max_workers = multiprocessing.cpu_count()
-        num_workers = num_workers if num_workers < max_workers else max_workers
-
-        if default_log_name is not None:
-            logging.getLogger(default_log_name).info('{}: num workers={} batch size={}'.format(sys._getframe().f_code.co_name, num_workers, batch_size))
-
-        return torch.utils.data.DataLoader(
-                                    dataset=dataset,
-                                    batch_size=batch_size,
-                                    shuffle=False,
-                                    num_workers=num_workers,
-                                    pin_memory=True,
-                                    collate_fn=DataLoader.collate_fn,
-                                    drop_last=True,
-                                    sampler=sampler)
-
-    @staticmethod
-    def create_sampler_iterable_dataloader(dataset, batch_size, num_workers, default_log_name=None):
-        sampler = TrainingSampler(len(dataset))
-        dataset = ToIterableDataset(dataset, sampler)
-
-        max_workers = multiprocessing.cpu_count()
-        num_workers = num_workers if num_workers < max_workers else max_workers
-
-        if default_log_name is not None:
-            logging.getLogger(default_log_name).info('{}: num workers={} batch size={}'.format(sys._getframe().f_code.co_name, num_workers, batch_size))
-
-        return torch.utils.data.DataLoader(
-                                    dataset=dataset,
-                                    batch_size=batch_size,
-                                    shuffle=False,
-                                    num_workers=num_workers,
-                                    pin_memory=True,
-                                    collate_fn=DataLoader.collate_fn,
-                                    drop_last=True)
-
-    @staticmethod
-    def create_distribute_sampler_iterable_dataloder(dataset, batch_size, rank, world_size, num_workers, default_log_name=None):
-        sampler = TrainingSampler(len(dataset), rank=rank, world_size=world_size)
-        dataset = ToIterableDataset(dataset, sampler)
-
-        max_workers = multiprocessing.cpu_count()
-        num_workers = num_workers if num_workers < max_workers else max_workers
-
-        if default_log_name is not None:
-            logging.getLogger(default_log_name).info('{}: num workers={} batch size={}'.format(sys._getframe().f_code.co_name, num_workers, batch_size))
-
-        return torch.utils.data.DataLoader(
-                                    dataset=dataset,
-                                    batch_size=batch_size,
-                                    shuffle=False,
-                                    num_workers=num_workers,
-                                    pin_memory=True,
-                                    collate_fn=DataLoader.collate_fn,
-                                    drop_last=True)
