@@ -65,20 +65,13 @@ class AdaptiveTrainer:
 
         self.model.enable_train()
 
-        total_cnt = 0
-        loss_avg = dict()
         for epoch in range(self.start_iter, self.max_iter):
             data = next(self.iter_train_loader)
 
             gt = data['A_exptC'] if 'B_exptC' not in data.keys() else data['B_exptC']
-            loss = self.model(data['A_input'], gt, epoch)
-
-            total_cnt += 1.0
-            for k, v in loss.items():
-                loss_avg[k] = loss_avg.get(k, 0) + v
-
+            loss_dict = self.model(data['A_input'], gt, epoch)
             self.checkpoint.save(self.model, epoch)
-            self.run_after(epoch, loss_avg, total_cnt)
+            self.run_after(epoch, loss_dict)
 
         self.checkpoint.save(self.model, self.max_iter)
 
@@ -87,14 +80,9 @@ class AdaptiveTrainer:
         self.visualize_result(self.model, self.test_dataloader, self.device, self.output, unnormalizing_value=self.unnormalizing_value)
         return
 
-    def run_after(self, epoch, loss_avg, total_cnt):
+    def run_after(self, epoch, loss_dict):
         if int(epoch+0.5) % self.checkpoint.check_period == 0:
-            loss_str = ''
-            for k, v in loss_avg.items():
-                if len(loss_str) > 0:
-                    loss_str += ', '
-                loss_str += '{}:{}'.format(k, v / total_cnt)
-            logging.getLogger(__name__).info('trainer run step {} : {}'.format(epoch, loss_str))
+            logging.getLogger(__name__).info('trainer run step {} : {}'.format(epoch, loss_dict))
         return
 
     def resume_or_load(self, resume=False):

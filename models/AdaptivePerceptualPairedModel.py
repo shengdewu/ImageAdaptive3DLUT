@@ -4,6 +4,7 @@ from models.AdaptivePairedModel import AdaptivePairedModel
 from engine.log.logger import setup_logger
 import engine.comm as comm
 from models.vgg_loss import PerceptualLoss
+from engine.slover.lr_scheduler import build_lr_scheduler
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -16,6 +17,9 @@ class AdaptivePerceptualPairedModel(AdaptivePairedModel):
         self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
 
         self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)
+
+        self.scheduler = build_lr_scheduler(cfg, self.optimizer_G)
+
         return
 
     def __call__(self, x, gt, epoch=None):
@@ -44,4 +48,14 @@ class AdaptivePerceptualPairedModel(AdaptivePairedModel):
 
         self.optimizer_G.step()
 
-        return {'psnr_avg':psnr_avg, 'mse_avg':loss_pixel.item(), 'perceptual':loss_perceptual.item(), 'tv_cons':tv_cons.item(), 'mn_cons':mn_cons.item(), 'weights_norm':weights_norm.item()}
+        self.scheduler.step(epoch=epoch)
+
+        learing_rate = '*'.join([str(lr) for lr in self.scheduler.get_last_lr()])
+
+        return {'psnr_avg':psnr_avg,
+                'mse_avg':loss_pixel.item(),
+                'perceptual':loss_perceptual.item(),
+                'tv_cons':tv_cons.item(),
+                'mn_cons':mn_cons.item(),
+                'weights_norm':weights_norm.item(),
+                'learing_rate': learing_rate}
