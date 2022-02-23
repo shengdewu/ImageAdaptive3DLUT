@@ -9,6 +9,7 @@ import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
 from engine.checkpoint.functional import get_model_state_dict, load_model_state_dict, load_checkpoint_state_dict
+from engine.slover.lr_scheduler import build_lr_scheduler
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -35,6 +36,9 @@ class AdaptivePairedModel:
         parameters.insert(0, self.lut0.parameters())
         parameters.insert(0, self.classifier.parameters())
         self.optimizer_G = torch.optim.Adam(itertools.chain(*parameters), lr=cfg.SOLVER.BASE_LR, betas=(cfg.SOLVER.ADAM.B1, cfg.SOLVER.ADAM.B2))
+
+        self.scheduler = build_lr_scheduler(cfg, self.optimizer_G)
+
         logging.getLogger(__name__).info("select {}/{} as trainer model, select zero lut ({}) form supplement".format(cfg.MODEL.ARCH, self.__class__, cfg.MODEL.LUT.ZERO_LUT))
         return
 
@@ -123,10 +127,14 @@ class AdaptivePairedModel:
     def get_addition_state_dict(self):
         addition = dict()
         addition['opt_g'] = get_model_state_dict(self.optimizer_G)
+        addition['scheduler'] = get_model_state_dict(self.scheduler)
         return addition
 
     def load_addition_state_dict(self, state_dict: dict):
         load_checkpoint_state_dict(self.optimizer_G, state_dict['opt_g'])
+        scheduler = state_dict.get('scheduler', None)
+        if scheduler is not None:
+            load_checkpoint_state_dict(self.scheduler, scheduler)
         return
 
     def enable_distribute(self, cfg):

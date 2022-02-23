@@ -4,7 +4,6 @@ from models.AdaptivePairedModel import AdaptivePairedModel
 from engine.log.logger import setup_logger
 import engine.comm as comm
 from models.vgg_loss import PerceptualLoss
-from engine.slover.lr_scheduler import build_lr_scheduler
 
 
 @MODEL_ARCH_REGISTRY.register()
@@ -17,8 +16,6 @@ class AdaptivePerceptualPairedModel(AdaptivePairedModel):
         self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
 
         self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)
-
-        self.scheduler = build_lr_scheduler(cfg, self.optimizer_G)
 
         return
 

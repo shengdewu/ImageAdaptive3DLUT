@@ -89,11 +89,11 @@ class ImageDatasetXinTu(Dataset):
                 img_input = TF.hflip(img_input)
                 img_exptC = TF.hflip(img_exptC)
 
-            a = np.random.uniform(0.8, 1.2)
-            img_input = TF.adjust_brightness(img_input, a)
-
-            a = np.random.uniform(0.8, 1.2)
-            img_input = TF.adjust_saturation(img_input, a)
+            if self.brightness.ENABLE:
+                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
+                img_input = TF.adjust_brightness(img_input, a)
+                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
+                img_input = TF.adjust_saturation(img_input, a)
 
         img_input = TF.to_tensor(img_input)
         img_exptC = TF.to_tensor(img_exptC)
@@ -177,11 +177,12 @@ class ImageDatasetXinTuUnpaired(Dataset):
             #    img_exptC = TF.vflip(img_exptC)
             #    img2 = TF.vflip(img2)
 
-            a = np.random.uniform(0.6, 1.4)
-            img_input = TF.adjust_brightness(img_input, a)
+            if self.brightness.ENABLE:
+                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
+                img_input = TF.adjust_brightness(img_input, a)
 
-            a = np.random.uniform(0.8, 1.2)
-            img_input = TF.adjust_saturation(img_input, a)
+                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
+                img_input = TF.adjust_saturation(img_input, a)
 
         img_input = TF.to_tensor(img_input)
         img_exptC = TF.to_tensor(img_exptC)
