@@ -24,10 +24,6 @@ class Inference:
         self.model = build_model(cfg)
         self.model.disable_train()
 
-        self.test_dataset = build_dataset(cfg, model='test')
-
-        logging.getLogger(__name__).info('create dataset {}, load {} test data'.format(cfg.DATALOADER.DATASET, len(self.test_dataset)))
-
         if tif:
             self.unnormalizing_value = 65535
         else:
@@ -38,19 +34,24 @@ class Inference:
         self.triliear = TrilinearInterpolationModel().to(cfg.MODEL.DEVICE)
         self.device = cfg.MODEL.DEVICE
         self.model_path = cfg.MODEL.WEIGHTS
-        self.output = cfg.OUTPUT_DIR
         return
 
-    def loop(self, skip=False, special_name=None):
+    def loop(self, cfg, skip=False, special_name=None):
         if special_name is not None:
             assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
+
+        output = cfg.OUTPUT_DIR
+        os.makedirs(output, exist_ok=True)
+        test_dataset = build_dataset(cfg, model='test')
+        logging.getLogger(__name__).info('create dataset {}, load {} test data'.format(cfg.DATALOADER.DATASET, len(test_dataset)))
 
         format = 'jpg' if self.unnormalizing_value == 255 else 'tif'
         skin_name = list()
         if skip:
-            skin_name = [name for name in os.listdir(self.output) if name.lower().endswith(format)]
-        for index in tqdm.tqdm(range(len(self.test_dataset))):
-            data = DataLoader.fromlist([self.test_dataset[index]])
+            skin_name = [name for name in os.listdir(output) if name.lower().endswith(format)]
+
+        for index in tqdm.tqdm(range(len(test_dataset))):
+            data = DataLoader.fromlist([test_dataset[index]])
             input_name = data['input_name'][0]
             if input_name.endswith('tif') and format != 'tif':
                 input_name = '{}.{}'.format(input_name[:input_name.rfind('.tif')], format)
@@ -66,7 +67,7 @@ class Inference:
 
             img_sample = torch.cat((real_A, fake_B, data["A_exptC"].to(self.device)), -1)
 
-            Inference.save_image(img_sample, '{}/{}'.format(self.output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
+            Inference.save_image(img_sample, '{}/{}'.format(output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
             # pos = input_name.lower().rfind('.{}'.format(format))
             # Inference.save_lut(combine_lut.detach().cpu().numpy(), '{}/{}.lut.{}'.format(self.output, input_name[:pos], input_name[pos + 1:]), self.unnormalizing_value)
 

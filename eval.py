@@ -48,16 +48,18 @@ def merge_config():
 def inference(cfg, special_name=None):
     eval = Inference(cfg, tif=False)
     eval.resume_or_load()
-    eval.loop(skip=True, special_name=special_name)
+    eval.loop(cfg=cfg, skip=True, special_name=special_name)
 
     torch.cuda.empty_cache()
     return
 
 
-def convert2jpg(path):
+def convert2jpg(path, special_name=None):
     base_names = [name for name in os.listdir(path) if name.find('lut') == -1 and name.lower().endswith('tif')]
     skip_names = [name for name in os.listdir(path) if name.lower().endswith('jpg')]
     for name in base_names:
+        if special_name is not None and name not in special_name:
+            continue
         new_name = '{}.jpg'.format(name[:name.rfind('.tif')])
         if new_name in skip_names:
             continue
@@ -78,10 +80,13 @@ if __name__ == '__main__':
     root_path = root_path[:root_path.rfind('/')]
 
     base_path = os.path.join(root_path, 'base')
-    convert2jpg(base_path)
+    rhd = open('./error.txt', mode='r')
+    special_name = ['{}.tif'.format(line.strip('\n')) for line in rhd.readlines()]
+    rhd.close()
+    convert2jpg(base_path, special_name)
     special_name = [name for name in os.listdir(base_path) if name.lower().endswith('jpg')]
 
-    compare_name = ['imagelut.c12.m20.1e4.vgg.rin.p6']
+    compare_name = ['imagelut.c12.m10.1e4.vgg.rin.p6.0139999', 'imagelut.c12.m30.s1.c5e5.p6.vgg.0.05.0159999', 'imagelut.c12.m10.s1.c1e4.p6.vgg.0.5.0249999']
     compare_paths = [os.path.join(root_path, name) for name in compare_name]
     out_path = os.path.join(root_path, 'compare-{}'.format('-'.join(compare_name)))
     compare(base_path=base_path, compare_paths=compare_paths, out_path=out_path, skip=True, special_name=special_name)
