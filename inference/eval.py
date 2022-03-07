@@ -154,6 +154,9 @@ def compare(base_path, compare_paths, out_path, skip=False, special_name=None):
     if skip:
         skip_name = os.listdir(out_path)
 
+    if base_path == '' or base_path is None:
+        base_path = compare_paths[0]
+        compare_paths = compare_paths[1:]
     base_names = [name for name in os.listdir(base_path) if name.find('lut') == -1]
     for name in tqdm.tqdm(base_names):
         if special_name is not None and name not in special_name:
