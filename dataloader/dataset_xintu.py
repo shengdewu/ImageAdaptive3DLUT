@@ -7,7 +7,8 @@ import dataloader.torchvision_x_functional as TF_x
 import torchvision.transforms.functional as TF
 from dataloader.build import DATASET_ARCH_REGISTRY
 from PIL import Image
-import torchvision.transforms as transforms
+import torchvision.transforms as torch_trans
+import logging
 
 
 def search_files(root, txt, skip_name):
@@ -34,8 +35,6 @@ def search_files(root, txt, skip_name):
 class ImageDatasetXinTu(Dataset):
     def __init__(self, cfg, mode="train"):
 
-        self.brightness = cfg.INPUT.BRIGHTNESS
-
         root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
@@ -56,6 +55,21 @@ class ImageDatasetXinTu(Dataset):
             index = [i for i in range(len(self.test_input_files))]
             index = np.random.choice(index, test_max_nums, replace=False)
             self.test_input_files = [self.test_input_files[i] for i in index]
+
+        brightness = 0
+        saturation = 0
+        self.brightness_prob = cfg.INPUT.BRIGHTNESS.PROB
+        if self.brightness_prob > 0:
+            brightness = (cfg.INPUT.BRIGHTNESS.MIN, cfg.INPUT.BRIGHTNESS.MAX)
+            logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable colorjitter(brightness):{}/{}'.format(self.brightness_prob, brightness))
+        self.color_jitter_brightness = torch_trans.ColorJitter(brightness=brightness)
+
+        self.saturation_prob = cfg.INPUT.SATURATION.PROB
+        if self.saturation_prob > 0:
+            saturation = (cfg.INPUT.SATURATION.MIN, cfg.INPUT.SATURATION.MAX)
+            logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable colorjitter(saturation):{}/{}'.format(self.saturation_prob, saturation))
+        self.color_jitter_saturation = torch_trans.ColorJitter(saturation=saturation)
+
         return
 
     def __getitem__(self, index):
@@ -79,7 +93,7 @@ class ImageDatasetXinTu(Dataset):
             W, H = img_input._size
             crop_h = round(H * ratio_H)
             crop_w = round(W * ratio_W)
-            i, j, h, w = transforms.RandomCrop.get_params(img_input, output_size=(crop_h, crop_w))
+            i, j, h, w = torch_trans.RandomCrop.get_params(img_input, output_size=(crop_h, crop_w))
             img_input = TF.crop(img_input, i, j, h, w)
             img_exptC = TF.crop(img_exptC, i, j, h, w)
             # img_input = TF.resized_crop(img_input, i, j, h, w, (320,320))
@@ -89,14 +103,14 @@ class ImageDatasetXinTu(Dataset):
                 img_input = TF.hflip(img_input)
                 img_exptC = TF.hflip(img_exptC)
 
-            if self.brightness.ENABLE:
-                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
-                img_input = TF.adjust_brightness(img_input, a)
-                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
-                img_input = TF.adjust_saturation(img_input, a)
-
         img_input = TF.to_tensor(img_input)
         img_exptC = TF.to_tensor(img_exptC)
+
+        if self.mode == 'train':
+            if np.random.random() < self.brightness_prob:
+                img_input = self.color_jitter_brightness(img_input)
+            if np.random.random() < self.saturation_prob:
+                img_input = self.color_jitter_saturation(img_input)
 
         return {"A_input": img_input, "A_exptC": img_exptC, "input_name": img_name}
 
@@ -192,10 +206,10 @@ class ImageDatasetXinTuUnpaired(Dataset):
             W2, H2 = img2._size
             crop_h = min(crop_h, H2)
             crop_w = min(crop_w, W2)
-            i, j, h, w = transforms.RandomCrop.get_params(img_input, output_size=(crop_h, crop_w))
+            i, j, h, w = torch_trans.RandomCrop.get_params(img_input, output_size=(crop_h, crop_w))
             img_input = TF.crop(img_input, i, j, h, w)
             img_exptC = TF.crop(img_exptC, i, j, h, w)
-            i, j, h, w = transforms.RandomCrop.get_params(img2, output_size=(crop_h, crop_w))
+            i, j, h, w = torch_trans.RandomCrop.get_params(img2, output_size=(crop_h, crop_w))
             img2 = TF.crop(img2, i, j, h, w)
 
             if np.random.random() > 0.5:
@@ -273,12 +287,14 @@ class ImageDatasetXinTuTif(ImageDatasetXinTu):
                 img_input = TF_x.hflip(img_input)
                 img_exptC = TF_x.hflip(img_exptC)
 
-            if self.brightness.ENABLE:
-                a = np.random.uniform(self.brightness.MIN, self.brightness.MAX)
-                img_input = TF_x.adjust_contrast(img_input, a)
-
         img_input = TF_x.to_tensor(img_input)
         img_exptC = TF_x.to_tensor(img_exptC)
+
+        if self.mode == 'train':
+            if np.random.random() < self.brightness_prob:
+                img_input = self.color_jitter_brightness(img_input)
+            if np.random.random() < self.saturation_prob:
+                img_input = self.color_jitter_saturation(img_input)
 
         return {"A_input": img_input, "A_exptC": img_exptC, "input_name": img_name}
 
