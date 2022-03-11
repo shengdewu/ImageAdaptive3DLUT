@@ -106,6 +106,39 @@ class ImageDatasetXinTu(Dataset):
         else:
             return len(self.test_input_files)
 
+    def get_item(self, index, skin_name, special_name=None, img_format='jpg'):
+
+        input_file = self.test_input_files[index % len(self.test_input_files)]
+        img_name = os.path.split(input_file[0])[-1]
+
+        if img_name.endswith('tif') and img_format != 'tif':
+            img_name = '{}.{}'.format(img_name[:img_name.rfind('.tif')], img_format)
+
+        if special_name is not None and img_name not in special_name:
+            return {"A_input": None, "input_name": img_name}
+
+        if img_name in skin_name:
+            return {"A_input": None, "input_name": img_name}
+
+        img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
+        img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
+
+        img_input = TF_x.to_tensor(img_input)
+        img_exptC = TF_x.to_tensor(img_exptC)
+
+        # down_sample_factor = 4
+        # w, h, c = img_input.shape
+        # w = (w // down_sample_factor * down_sample_factor)
+        # h = (h // down_sample_factor * down_sample_factor)
+        # img_input = img_input[:w, :h, :]
+        #
+        # #intensity = cv2.cvtColor(img_input, cv2.COLOR_RGB2GRAY)
+        # # img_input = hdr(img_input.astype(np.float32), down_scaler=down_scaler, unnormalizing_value=unnormalizing_value) / unnormalizing_value
+        # final_img = run_bf_tone_map(img_input, is_rgb=True, gamma=0.6, down_sample_factor=down_sample_factor)
+        # img_input = (final_img * 255.0).astype(np.uint8)
+
+        return {"A_input": img_input, "A_exptC": img_exptC, "input_name": img_name}
+
 
 @DATASET_ARCH_REGISTRY.register()
 class ImageDatasetXinTuUnpaired(Dataset):

@@ -15,7 +15,7 @@ class AdaptivePerceptualPairedModel(AdaptivePairedModel):
         self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
         self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
 
-        self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)
+        self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, device=self.device, path=cfg.MODEL.VGG.VGG_PATH)
 
         return
 

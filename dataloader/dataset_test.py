@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 import dataloader.torchvision_x_functional as TF_x
 from dataloader.build import DATASET_ARCH_REGISTRY
 import cv2
+from tonemap.tone_map import run_bf_tone_map
 
 
 @DATASET_ARCH_REGISTRY.register()
@@ -48,6 +49,17 @@ class ImageDatasetTest(Dataset):
             return {"A_input": None, "input_name": img_name}
 
         img_input = cv2.cvtColor(cv2.imread(input_file, -1), cv2.COLOR_BGR2RGB)
+
+        # down_sample_factor = 4
+        # w, h, c = img_input.shape
+        # w = (w // down_sample_factor * down_sample_factor)
+        # h = (h // down_sample_factor * down_sample_factor)
+        # img_input = img_input[:w, :h, :]
+        #
+        # #intensity = cv2.cvtColor(img_input, cv2.COLOR_RGB2GRAY)
+        # # img_input = hdr(img_input.astype(np.float32), down_scaler=down_scaler, unnormalizing_value=unnormalizing_value) / unnormalizing_value
+        # final_img = run_bf_tone_map(img_input, is_rgb=True, gamma=0.6, down_sample_factor=down_sample_factor)
+        # img_input = (final_img * 255.0).astype(np.uint8)
 
         img_input = TF_x.to_tensor(img_input)
         return {"A_input": img_input, "input_name": img_name}

@@ -45,29 +45,27 @@ class Inference:
         test_dataset = build_dataset(cfg, model='test')
         logging.getLogger(__name__).info('create dataset {}, load {} test data'.format(cfg.DATALOADER.DATASET, len(test_dataset)))
 
-        format = 'jpg' if self.unnormalizing_value == 255 else 'tif'
+        img_format = 'jpg' if self.unnormalizing_value == 255 else 'tif'
         skin_name = list()
         if skip:
-            skin_name = [name for name in os.listdir(output) if name.lower().endswith(format)]
+            skin_name = [name for name in os.listdir(output) if name.lower().endswith(img_format)]
 
         for index in tqdm.tqdm(range(len(test_dataset))):
-            data = DataLoader.fromlist([test_dataset[index]])
-            input_name = data['input_name'][0]
-            if input_name.endswith('tif') and format != 'tif':
-                input_name = '{}.{}'.format(input_name[:input_name.rfind('.tif')], format)
+            data = test_dataset.get_item(index, skin_name, special_name=special_name, img_format=img_format)
+            if data['A_input'] is None:
+                continue
 
-            if special_name is not None and input_name not in special_name:
-                continue
-            if input_name in skin_name:
-                continue
-            real_A = data["A_input"].to(self.device)
+            real_A = data["A_input"].to(self.device).unsqueeze(0)
 
             combine_lut = self.model.generate_lut(real_A)
             _, fake_B = self.triliear(combine_lut, real_A)
 
-            img_sample = torch.cat((real_A, fake_B, data["A_exptC"].to(self.device)), -1)
+            if 'A_exptC' in data.keys():
+                img_sample = torch.cat((real_A, fake_B, data["A_exptC"].to(self.device).unsqueeze(0)), -1)
+            else:
+                img_sample = torch.cat((real_A, fake_B), -1)
 
-            Inference.save_image(img_sample, '{}/{}'.format(output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
+            Inference.save_image(img_sample, '{}/{}'.format(output, data['input_name']), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
             # pos = input_name.lower().rfind('.{}'.format(format))
             # Inference.save_lut(combine_lut.detach().cpu().numpy(), '{}/{}.lut.{}'.format(self.output, input_name[:pos], input_name[pos + 1:]), self.unnormalizing_value)
 
