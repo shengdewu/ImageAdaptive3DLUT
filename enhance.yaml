@@ -1,4 +1,3 @@
-
 SOLVER:
   BASE_LR: 0.0002
   WARMUP_ITERS: 0
@@ -27,41 +26,46 @@ SOLVER:
     B2: 0.999
 
 MODEL:
-  WEIGHTS: "/mnt/data/train.output/adaptive.3dlut/imagelut.c12.m10.1e4.vgg/AdaptivePerceptualPairedModel_0024999.pth"
+  WEIGHTS: ''
   VGG:
-    VGG_PATH: "/mnt/data/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth"
+    VGG_PATH: ""
     VGG_LAYER: 14
-  DEVICE: "cuda"
+  DEVICE: cuda
   ARCH: AdaptivePerceptualPairedModel
   LUT:
-    SUPPLEMENT_NUMS: 12
+    SUPPLEMENT_NUMS: 8
     DIMS: 64
     ZERO_LUT: True
   CLASSIFIER:
-    PRETRAINED_PATH: "/mnt/data/pretrain.model/resnet/resnet50-0676ba61.pth"
+    PRETRAINED_PATH: ""
     ARCH: ClassifierResnet
     RESNET_ARCH: resnet50
     RESNET_NORMAL: ''
 
 DATALOADER:
   NUM_WORKERS: 0
-  DATA_PATH: "/mnt/data/data.set/xintu.data/xt.image.enhancement.540"
-  DATASET: "ImageDatasetXinTuTif"
-  XT_TRAIN_INPUT_TXT: "old_no_aug.test.txt"
-  XT_TRAIN_LABEL_TXT: "old_no_aug.test.txt"
-  XT_TEST_TXT: "old_no_aug.test.txt"
-  XT_TEST_MAX_NUMS: -1
+  DATA_PATH: /data
+  DATASET: ImageDataSetXinTu
+  XT_TRAIN_INPUT_TXT: "no_aug.test.txt"
+  XT_TRAIN_LABEL_TXT: "no_aug.test.txt"
+  XT_TEST_TXT: "no_aug.test.txt"
+  XT_TEST_MAX_NUMS: 10
 
 INPUT:
-  BRIGHTNESS:
-    MIN: 1.1
-    MAX: 1.2
+  COLOR_JITTER:
     PROB: 1.0
-  SATURATION:
-    MIN: 1.1
-    MAX: 1.4
-    PROB: 1.0
+    BRIGHTNESS:
+      ENABLE: true
+      MIN: 0.7
+      MAX: 1.05
+    SATURATION:
+      ENABLE: true
+      MIN: 0.7
+      MAX: 1.1
+    CONTRAST:
+      ENABLE: true
+      MIN: 0.8
+      MAX: 1.1
 
-OUTPUT_LOG_NAME: "imagelut"
-OUTPUT_DIR: "/mnt/data/train.output/imagelut.test/imagelut.c12.m10.1e4.vgg"
-
+OUTPUT_LOG_NAME: "image.lut"
+OUTPUT_DIR: /output

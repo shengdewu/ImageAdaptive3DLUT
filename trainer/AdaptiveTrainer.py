@@ -48,7 +48,6 @@ class AdaptiveTrainer:
                                               file_prefix=cfg.MODEL.ARCH,
                                               save_to_disk=comm.is_main_process())
 
-        self.unnormalizing_value = train_dataset.unnormalizing_value() if hasattr(train_dataset, 'unnormalizing_value') else 255
         self.device = cfg.MODEL.DEVICE
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
@@ -60,7 +59,7 @@ class AdaptiveTrainer:
         return
 
     def loop(self):
-        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device, unnormalizing_value=self.unnormalizing_value)
+        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device)
         logging.getLogger(__name__).info('before train psnr = {}'.format(psnr))
 
         self.model.enable_train()
@@ -75,9 +74,9 @@ class AdaptiveTrainer:
 
         self.checkpoint.save(self.model, self.max_iter)
 
-        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device, unnormalizing_value=self.unnormalizing_value)
+        psnr = self.calculate_psnr(self.model, self.test_dataloader, self.device)
         logging.getLogger(__name__).info('after train psnr = {}'.format(psnr))
-        self.visualize_result(self.model, self.test_dataloader, self.device, self.output, unnormalizing_value=self.unnormalizing_value)
+        self.visualize_result(self.model, self.test_dataloader, self.device, self.output)
         return
 
     def run_after(self, epoch, loss_dict):
