@@ -20,6 +20,9 @@ SOLVER:
   LAMBDA_SMOOTH: 10.0  # 0 0.00001 0.0001 0.001 0.01 0.1
   LAMBDA_MONOTONICITY: 10.0 # 0.1 0 1.0 10 100 1000
   LAMBDA_PERCEPTUAL: 0.05  # value similar LAMBDA_SMOOTH
+  LAMBDA_SPA: 1.0
+  LAMBDA_EXP: 1.0
+  LAMBDA_COL: 1.0
   N_CRITIC: 1
   ADAM:
     B1: 0.9
@@ -31,16 +34,16 @@ MODEL:
     VGG_PATH: ""
     VGG_LAYER: 14
   DEVICE: cuda
-  ARCH: AdaptivePerceptualPairedModel
+  ARCH: AdaptiveDCEPairedModel
   LUT:
     SUPPLEMENT_NUMS: 8
     DIMS: 64
     ZERO_LUT: True
   CLASSIFIER:
-    PRETRAINED_PATH: ""
+    PRETRAINED_PATH: /mnt/data/pretrain.model/resnet/resnet18-5c106cde.pth
     ARCH: ClassifierResnet
-    RESNET_ARCH: resnet50
-    RESNET_NORMAL: ''
+    RESNET_ARCH: resnet18
+    RESNET_NORMAL: InstanceNorm2d
 
 DATALOADER:
   NUM_WORKERS: 0
@@ -53,7 +56,7 @@ DATALOADER:
 
 INPUT:
   COLOR_JITTER:
-    PROB: 1.0
+    PROB: 0.0
     BRIGHTNESS:
       ENABLE: true
       MIN: 0.7

@@ -4,15 +4,12 @@ from models.build import MODEL_ARCH_REGISTRY
 from engine.loss.vgg_loss import PerceptualLoss
 from models.functional import compute_gradient_penalty
 from models.AdaptiveUnpairedModel import AdaptiveUnPairedModel
-from engine.log.logger import setup_logger
-import engine.comm as comm
 
 
 @MODEL_ARCH_REGISTRY.register()
 class AdaptivePerceptualUnPairedModel(AdaptiveUnPairedModel):
     def __init__(self, cfg):
         super(AdaptivePerceptualUnPairedModel, self).__init__(cfg)
-        setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=__name__)
         self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
 
         self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)

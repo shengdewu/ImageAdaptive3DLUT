@@ -1,8 +1,6 @@
 import math
 from models.build import MODEL_ARCH_REGISTRY
 from models.AdaptivePairedModel import AdaptivePairedModel
-from engine.log.logger import setup_logger
-import engine.comm as comm
 from engine.loss.vgg_loss import PerceptualLoss
 
 
@@ -10,7 +8,6 @@ from engine.loss.vgg_loss import PerceptualLoss
 class AdaptivePerceptualPairedModel(AdaptivePairedModel):
     def __init__(self, cfg):
         super(AdaptivePerceptualPairedModel, self).__init__(cfg)
-        setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=__name__)
         self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
         self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
 
