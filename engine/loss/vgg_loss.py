@@ -73,39 +73,3 @@ class PerceptualLoss(torch.nn.Module):
 
         return torch.mean((x_fea - y_fea) ** 2)
 
-
-if __name__ == '__main__':
-    import os
-    import random
-    import cv2
-    import dataloader.torchvision_x_functional as TF_x
-    import torchvision.transforms.functional as TF
-    import shutil
-    import numpy as np
-
-    def featch(img, l, device):
-        fea = loss.fetch(TF_x.to_tensor(img).to(device).unsqueeze(0), l)
-        fea = torch.mean((fea * 65535), dim=1).cpu().numpy()[0].astype(np.uint16)
-        return fea
-
-    device = 'cuda'
-    img_root = '/mnt/data/data.set/xintu.data/xt.image.enhancement.540/gt_16bit_540p'
-    out_root = '/mnt/data/train.output/imagelut.test/test.vgg'
-    file_names = os.listdir(img_root)
-
-    loss = PerceptualLoss(17, device=device, path='/mnt/data/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth')
-
-    #4, 9, 16, 30
-    layers =  [0, 2, 5, 7, 10, 12, 14, 17, 19, 21, 24, 26, 28]
-    rlayers =   [1, 3, 6, 8, 11, 13, 15, 18, 20, 22, 23, 25, 27, 29]
-    for name in random.sample(file_names, 4):
-        img = cv2.imread(os.path.join(img_root, name), cv2.IMREAD_UNCHANGED)
-        os.makedirs(os.path.join(out_root, name), exist_ok=True)
-        shutil.copy2(os.path.join(img_root, name), os.path.join(out_root, name, name))
-        for l in layers:
-            fea = featch(img, l, device)
-            cv2.imwrite(os.path.join(out_root, name, 'conv-{}-{}'.format(l, name)), fea)
-
-        for l in rlayers:
-            fea = featch(img, l, device)
-            cv2.imwrite(os.path.join(out_root, name, 'relu-{}-{}'.format(l, name)), fea)

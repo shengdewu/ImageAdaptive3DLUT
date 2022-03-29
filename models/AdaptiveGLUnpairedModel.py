@@ -17,7 +17,6 @@ class AdaptiveGLUnPairedModel(AdaptivePairedModel):
         super(AdaptiveGLUnPairedModel, self).__init__(cfg)
         setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=__name__)
         self.lambda_gp = cfg.SOLVER.LAMBDA_GP
-        self.lambda_pixel = cfg.SOLVER.LAMBDA_PIXEL
         self.n_critic = cfg.SOLVER.N_CRITIC
 
         self.discriminator = PatchDiscriminator(device=cfg.MODEL.DEVICE)

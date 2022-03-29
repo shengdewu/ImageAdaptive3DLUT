@@ -1,7 +1,7 @@
 import torch
 import math
 from models.build import MODEL_ARCH_REGISTRY
-from models.vgg_loss import PerceptualLoss
+from engine.loss.vgg_loss import PerceptualLoss
 from models.functional import compute_gradient_penalty
 from models.AdaptiveUnpairedModel import AdaptiveUnPairedModel
 from engine.log.logger import setup_logger

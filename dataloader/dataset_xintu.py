@@ -73,21 +73,15 @@ class ImageDataSetXinTu(Dataset):
         img_expert = cv2.cvtColor(cv2.imread(gt_file, -1), cv2.COLOR_BGR2RGB)
 
         if self.mode == 'train':
-            w = min(img_input.shape[1], img_expert.shape[1])
-            h = min(img_input.shape[0], img_expert.shape[0])
-            if img_input.shape[:2] != (h, w):
-                img_input = img_input[0:h, 0:w, :]
-            elif img_expert.shape[:2] != (h, w):
-                img_expert = img_expert[0:h, 0:w, :]
-
-            # ratio_h = np.random.uniform(0.6, 1.0)
-            # ratio_w = np.random.uniform(0.6, 1.0)
-            # w, h = img_input.shape[1], img_input.shape[0]
-            # crop_h = round(h * ratio_h)
-            # crop_w = round(w * ratio_w)
-            # i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
-            # img_input = TF_x.crop(img_input, i, j, h, w)
-            # img_expert = TF_x.crop(img_expert, i, j, h, w)
+            if img_input.shape[:2] != img_expert.shape[:2]:
+                ratio_h = np.random.uniform(0.8, 1.0)
+                ratio_w = np.random.uniform(0.8, 1.0)
+                w, h = img_input.shape[1], img_input.shape[0]
+                crop_h = round(h * ratio_h)
+                crop_w = round(w * ratio_w)
+                i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
+                img_input = TF_x.crop(img_input, i, j, h, w)
+                img_expert = TF_x.crop(img_expert, i, j, h, w)
 
         img_input = TF_x.to_tensor(img_input)
         img_expert = TF_x.to_tensor(img_expert)
@@ -183,26 +177,20 @@ class ImageDataSetXinTuUnpaired(Dataset):
             img2 = img_exptC
 
         if self.mode == "train":
-            W = min(img_input.shape[1], img_exptC.shape[1])
-            H = min(img_input.shape[0], img_exptC.shape[0])
-            if img_input.shape[:2] != (H, W):
-                img_input = img_input[0:H, 0:W, :]
-            elif img_exptC.shape[:2] != (H, W):
-                img_exptC = img_exptC[0:H, 0:W, :]
-
-            # ratio_H = np.random.uniform(0.6, 1.0)
-            # ratio_W = np.random.uniform(0.6, 1.0)
-            # W, H = img_input.shape[1], img_input.shape[0]
-            # crop_h = round(H * ratio_H)
-            # crop_w = round(W * ratio_W)
-            # W2, H2 = img2.shape[1], img2.shape[0]
-            # crop_h = min(crop_h, H2)
-            # crop_w = min(crop_w, W2)
-            # i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
-            # img_input = TF_x.crop(img_input, i, j, h, w)
-            # img_exptC = TF_x.crop(img_exptC, i, j, h, w)
-            # i, j, h, w = TF_x.get_crop_params(img2, output_size=(crop_h, crop_w))
-            # img2 = TF_x.crop(img2, i, j, h, w)
+            if img_exptC.shape[:2] != img_input.shape[:2] or img2.shape[:2] != img_input.shape[:2]:
+                ratio_H = np.random.uniform(0.8, 1.0)
+                ratio_W = np.random.uniform(0.8, 1.0)
+                W, H = img_input.shape[1], img_input.shape[0]
+                crop_h = round(H * ratio_H)
+                crop_w = round(W * ratio_W)
+                W2, H2 = img2.shape[1], img2.shape[0]
+                crop_h = min(crop_h, H2)
+                crop_w = min(crop_w, W2)
+                i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
+                img_input = TF_x.crop(img_input, i, j, h, w)
+                img_exptC = TF_x.crop(img_exptC, i, j, h, w)
+                i, j, h, w = TF_x.get_crop_params(img2, output_size=(crop_h, crop_w))
+                img2 = TF_x.crop(img2, i, j, h, w)
 
         img_input = TF_x.to_tensor(img_input)
         img_exptC = TF_x.to_tensor(img_exptC)
