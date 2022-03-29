@@ -115,6 +115,14 @@ class ImageDataSetXinTu(Dataset):
         img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
         img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
 
+        w = min(img_input.shape[1], img_exptC.shape[1])
+        h = min(img_input.shape[0], img_exptC.shape[0])
+
+        if img_input.shape[:2] != (h, w):
+            img_input = img_input[0:h, 0:w, :]
+        elif img_exptC.shape[:2] != (h, w):
+            img_exptC = img_exptC[0:h, 0:w, :]
+
         img_input = TF_x.to_tensor(img_input)
         img_exptC = TF_x.to_tensor(img_exptC)
 
