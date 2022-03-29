@@ -5,6 +5,7 @@ from models.classifier.build import CLASSIFIER_ARCH_REGISTRY
 from models.functional import weights_init_normal
 import logging
 from engine.checkpoint.functional import load_model_state_dict
+import torch.nn.functional as torch_func
 
 __all__ = [
     'Classifier',
@@ -33,6 +34,10 @@ class Classifier(torch.nn.Module):
             torch.nn.Conv2d(128, cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, 8, padding=0),
         )
         self.to(cfg.MODEL.DEVICE)
+
+        self.down_factor = cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+        assert self.down_factor % 2 == 0 or self.down_factor == 1, 'the {} must be divisible by 2 or equal 1'.format(self.down_factor)
+
         logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
@@ -43,7 +48,10 @@ class Classifier(torch.nn.Module):
         return
 
     def forward(self, img_input):
-        return self.model(img_input)
+        if self.down_factor > 1:
+            return self.model(torch_func.interpolate(img_input, scale_factor=1/self.down_factor, mode='bilinear'))
+        else:
+            return self.model(img_input)
 
 
 @CLASSIFIER_ARCH_REGISTRY.register()
@@ -64,6 +72,10 @@ class ClassifierUnpaired(torch.nn.Module):
             torch.nn.Conv2d(128, cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1, 8, padding=0),
         )
         self.to(cfg.MODEL.DEVICE)
+
+        self.down_factor = cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+        assert self.down_factor % 2 == 0 or self.down_factor == 1, 'the {} must be divisible by 2 or equal 1'.format(self.down_factor)
+
         logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
@@ -74,7 +86,10 @@ class ClassifierUnpaired(torch.nn.Module):
         return
 
     def forward(self, img_input):
-        return self.model(img_input)
+        if self.down_factor > 1:
+            return self.model(torch_func.interpolate(img_input, scale_factor=1/self.down_factor, mode='bilinear'))
+        else:
+            return self.model(img_input)
 
 
 @CLASSIFIER_ARCH_REGISTRY.register()
@@ -95,6 +110,10 @@ class ClassifierResnet(torch.nn.Module):
             self.external_init = False
 
         self.to(cfg.MODEL.DEVICE)
+
+        self.down_factor = cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+        assert self.down_factor % 2 == 0 or self.down_factor == 1, 'the {} must be divisible by 2 or equal 1'.format(self.down_factor)
+
         logging.getLogger(cfg.OUTPUT_LOG_NAME).info('select {}/{} as classifier'.format(cfg.MODEL.CLASSIFIER.ARCH, self.__class__))
         return
 
@@ -105,7 +124,10 @@ class ClassifierResnet(torch.nn.Module):
         return
 
     def forward(self, x):
-        return self.resnet(x)
+        if self.down_factor > 1:
+            return self.resnet(torch_func.interpolate(x, scale_factor=1/self.down_factor, mode='bilinear'))
+        else:
+            return self.resnet(x)
 
 
 @CLASSIFIER_ARCH_REGISTRY.register()

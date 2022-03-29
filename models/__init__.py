@@ -4,3 +4,4 @@ from .AdaptiveGLUnpairedModel import AdaptiveGLUnPairedModel
 from .AdaptivePerceptualPairedModel import AdaptivePerceptualPairedModel
 from .AdaptivePerceptualUnPairedModel import AdaptivePerceptualUnPairedModel
 from .AdaptiveDCEPairedModel import AdaptiveDCEPairedModel
+from .AdaptiveColorPairedModel import AdaptiveColorPairedModel
