@@ -5,3 +5,5 @@ from .AdaptivePerceptualPairedModel import AdaptivePerceptualPairedModel
 from .AdaptivePerceptualUnPairedModel import AdaptivePerceptualUnPairedModel
 from .AdaptiveDCEPairedModel import AdaptiveDCEPairedModel
 from .AdaptiveColorPairedModel import AdaptiveColorPairedModel
+from .AdaptiveL1SSIMLossModel import AdaptiveL1SSIMLossModel
+from .AdaptiveGaussianLossModel import AdaptiveGaussianLossModel
