@@ -10,7 +10,7 @@ class AdaptiveL1SSIMLossModel(AdaptivePerceptualPairedModel):
     def __init__(self, cfg):
         super(AdaptiveL1SSIMLossModel, self).__init__(cfg)
         self.ssim_loss = engine_ssim.SSIM()
-        self.criterion_pixelwise = torch.nn.L1Loss().to(self.device)
+        self.criterion_pixelwise = torch.nn.L1Loss(reduction='sum').to(self.device)
         self.lambda_ssim = cfg.SOLVER.LAMBDA_SSIM
         return
 
