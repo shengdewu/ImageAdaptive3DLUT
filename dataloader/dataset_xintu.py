@@ -57,6 +57,7 @@ class ImageDataSetXinTu(Dataset):
 
         self.color_jitter = ColorJitter(cfg.INPUT.COLOR_JITTER, cfg.OUTPUT_LOG_NAME)
         self.color_jitter_prob = cfg.INPUT.COLOR_JITTER.PROB
+        self.color_jitter_train = cfg.INPUT.COLOR_JITTER.get('TRAINING_ENHANCE', False)
 
         return
 
@@ -97,6 +98,10 @@ class ImageDataSetXinTu(Dataset):
         if self.mode == 'train':
             if np.random.random() <= self.color_jitter_prob:
                 img_input = self.color_jitter(img_input)
+
+            if self.color_jitter_train:
+                img_expert = TF.adjust_brightness(img_expert, 0.9)
+                img_expert = TF.adjust_contrast(img_expert, 1.2)
 
         return {"A_input": img_input, "A_exptC": img_expert, "input_name": img_name}
 

@@ -4,7 +4,7 @@ import logging
 
 
 def range_float(start, end, step, exclude, base=10):
-    assert start < end
+    assert start <= end
     return [i/base for i in np.arange(int(start*base), int(end*base+1), step=int(step*base)) if i != int(exclude*base)]
 
 
