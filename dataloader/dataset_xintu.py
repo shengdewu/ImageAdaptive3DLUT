@@ -8,6 +8,7 @@ import torchvision.transforms.functional as TF
 from dataloader.build import DATASET_ARCH_REGISTRY
 from PIL import Image
 from dataloader.augmentation import ColorJitter
+import logging
 
 
 def search_files(root, txt, skip_name):
@@ -59,6 +60,7 @@ class ImageDataSetXinTu(Dataset):
         self.color_jitter_prob = cfg.INPUT.COLOR_JITTER.PROB
         self.color_jitter_train = cfg.INPUT.COLOR_JITTER.get('TRAINING_ENHANCE', False)
 
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}'.format(self.__class__, self.color_jitter_train))
         return
 
     def __getitem__(self, index):

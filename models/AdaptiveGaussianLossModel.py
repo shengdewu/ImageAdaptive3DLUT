@@ -1,17 +1,23 @@
 import math
 from models.build import MODEL_ARCH_REGISTRY
-from models.AdaptivePerceptualPairedModel import AdaptivePerceptualPairedModel
+from models.AdaptiveBaseModel import AdaptiveBaseModel
 import torch
 import torchvision.transforms as tt
+from engine.loss.vgg_loss import PerceptualLoss
 
 
 @MODEL_ARCH_REGISTRY.register()
-class AdaptiveGaussianLossModel(AdaptivePerceptualPairedModel):
+class AdaptiveGaussianLossModel(AdaptiveBaseModel):
     def __init__(self, cfg):
         super(AdaptiveGaussianLossModel, self).__init__(cfg)
-        self.lambda_col = cfg.SOLVER.LAMBDA_COL
         self.gauss = tt.GaussianBlur(kernel_size=21, sigma=3.0)
+        self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, device=self.device, path=cfg.MODEL.VGG.VGG_PATH)
         self.color_loss = torch.nn.MSELoss()
+        self.criterion_pixelwise = torch.nn.L1Loss(reduction='sum').to(self.device)
+
+        self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
+        self.lambda_pixel = cfg.SOLVER.LAMBDA_PIXEL
+        self.lambda_col = cfg.SOLVER.LAMBDA_COL
         return
 
     def __call__(self, x, gt, epoch=None):

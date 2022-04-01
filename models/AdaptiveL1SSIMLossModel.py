@@ -1,17 +1,24 @@
 import math
 from models.build import MODEL_ARCH_REGISTRY
-from models.AdaptivePerceptualPairedModel import AdaptivePerceptualPairedModel
+from models.AdaptiveBaseModel import AdaptiveBaseModel
 import torch
 import engine.loss.ssim_loss as engine_ssim
+from engine.loss.vgg_loss import PerceptualLoss
 
 
 @MODEL_ARCH_REGISTRY.register()
-class AdaptiveL1SSIMLossModel(AdaptivePerceptualPairedModel):
+class AdaptiveL1SSIMLossModel(AdaptiveBaseModel):
     def __init__(self, cfg):
         super(AdaptiveL1SSIMLossModel, self).__init__(cfg)
         self.ssim_loss = engine_ssim.SSIM()
-        self.criterion_pixelwise = torch.nn.L1Loss(reduction='sum').to(self.device)
+        self.criterion_pixelwise = torch.nn.L1Loss().to(self.device)
+        self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, device=self.device, path=cfg.MODEL.VGG.VGG_PATH)
+        self.cos_loss = torch.nn.CosineSimilarity(dim=1)
+
         self.lambda_ssim = cfg.SOLVER.LAMBDA_SSIM
+        self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
+        self.lambda_pixel = cfg.SOLVER.LAMBDA_PIXEL
+        self.lambda_cos = cfg.SOLVER.LOSS.LAMBDA_COS
         return
 
     def __call__(self, x, gt, epoch=None):
@@ -32,10 +39,11 @@ class AdaptiveL1SSIMLossModel(AdaptivePerceptualPairedModel):
         mn_cons = sum(mn1) + mn0
 
         loss_perceptual = self.criterion_perceptual(fake_B, real_B)
+        cos_loss = self.cos_loss(fake_B, real_B)
 
         loss = self.lambda_pixel * loss_pixel + self.lambda_perceptual * loss_perceptual + \
                self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + \
-               self.lambda_monotonicity * mn_cons + self.lambda_ssim * ssim_loss
+               self.lambda_monotonicity * mn_cons + self.lambda_ssim * ssim_loss + self.lambda_cos * cos_loss
 
         psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
@@ -52,6 +60,7 @@ class AdaptiveL1SSIMLossModel(AdaptivePerceptualPairedModel):
                 'loss_pixel': loss_pixel.item(),
                 'ssim_loss': ssim_loss.item(),
                 'perceptual': loss_perceptual.item(),
+                'cos_loss': cos_loss.item(),
                 'mn_cons': mn_cons.item(),
                 'tv_cons': tv_cons.item(),
                 'weights_norm': weights_norm.item(),
