@@ -58,9 +58,16 @@ class ImageDataSetXinTu(Dataset):
 
         self.color_jitter = ColorJitter(cfg.INPUT.COLOR_JITTER, cfg.OUTPUT_LOG_NAME)
         self.color_jitter_prob = cfg.INPUT.COLOR_JITTER.PROB
-        self.color_jitter_train = cfg.INPUT.COLOR_JITTER.get('TRAINING_ENHANCE', False)
 
-        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}'.format(self.__class__, self.color_jitter_train))
+        self.color_jitter_train = False
+        self.train_brightness = 1
+        self.train_contrast = 1
+        if cfg.INPUT.get('TRAINING_COLOR_JITTER', None) is not None:
+            self.color_jitter_train = cfg.INPUT.TRAINING_COLOR_JITTER.ENABLE
+            self.train_brightness = cfg.INPUT.TRAINING_COLOR_JITTER.BRIGHTNESS
+            self.train_contrast = cfg.INPUT.TRAINING_COLOR_JITTER.CONTRAST
+
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}-{}/{}'.format(self.__class__, self.color_jitter_train, self.train_brightness, self.train_contrast))
         return
 
     def __getitem__(self, index):
@@ -102,8 +109,8 @@ class ImageDataSetXinTu(Dataset):
                 img_input = self.color_jitter(img_input)
 
             if self.color_jitter_train:
-                img_expert = TF.adjust_brightness(img_expert, 0.9)
-                img_expert = TF.adjust_contrast(img_expert, 1.2)
+                img_expert = TF.adjust_brightness(img_expert, self.train_brightness)
+                img_expert = TF.adjust_contrast(img_expert, self.train_contrast)
 
         return {"A_input": img_input, "A_exptC": img_expert, "input_name": img_name}
 
