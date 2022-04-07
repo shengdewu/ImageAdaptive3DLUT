@@ -62,12 +62,14 @@ class ImageDataSetXinTu(Dataset):
         self.color_jitter_train = False
         self.train_brightness = 1
         self.train_contrast = 1
+        self.train_saturation = 1
         if cfg.INPUT.get('TRAINING_COLOR_JITTER', None) is not None:
             self.color_jitter_train = cfg.INPUT.TRAINING_COLOR_JITTER.ENABLE
             self.train_brightness = cfg.INPUT.TRAINING_COLOR_JITTER.BRIGHTNESS
             self.train_contrast = cfg.INPUT.TRAINING_COLOR_JITTER.CONTRAST
+            self.train_saturation = cfg.INPUT.TRAINING_COLOR_JITTER.SATURATION
 
-        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}-{}/{}'.format(self.__class__, self.color_jitter_train, self.train_brightness, self.train_contrast))
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}-{}/{}/{}'.format(self.__class__, self.color_jitter_train, self.train_brightness, self.train_contrast, self.train_saturation))
         return
 
     def __getitem__(self, index):
@@ -111,6 +113,11 @@ class ImageDataSetXinTu(Dataset):
             if self.color_jitter_train:
                 img_expert = TF.adjust_brightness(img_expert, self.train_brightness)
                 img_expert = TF.adjust_contrast(img_expert, self.train_contrast)
+                img_expert = TF.adjust_saturation(img_expert, self.train_saturation)
+
+        # img_sample = torch.cat((img_input, img_expert_ori, img_expert), -1)
+        # ndarr = img_sample.mul(255.0).add_(0.5).clamp_(0, 255.0).permute(1, 2, 0).numpy().astype(np.uint8)
+        # cv2.imwrite('/mnt/sda1/enhance.test/image.lut.test/{}.jpg'.format(img_name), ndarr[:, :, ::-1])
 
         return {"A_input": img_input, "A_exptC": img_expert, "input_name": img_name}
 
