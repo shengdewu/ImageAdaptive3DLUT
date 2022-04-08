@@ -11,6 +11,7 @@ class AdaptivePerceptualUnPairedModel(AdaptiveUnPairedModel):
     def __init__(self, cfg):
         super(AdaptivePerceptualUnPairedModel, self).__init__(cfg)
         self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
+        self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
 
         self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)
         return
@@ -63,7 +64,7 @@ class AdaptivePerceptualUnPairedModel(AdaptiveUnPairedModel):
             tv_cons = sum(tv1) + tv0
             mn_cons = sum(mn1) + mn0
 
-            loss_G = -torch.mean(pred_fake) + self.lambda_pixel * loss_pixel + self.lambda_perceptual * loss_perceptual + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
+            loss_G = -torch.mean(pred_fake) + self.lambda_pixel * loss_pixel + self.lambda_perceptual * loss_perceptual + self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + self.lambda_monotonicity * mn_cons
 
             loss_G.backward()
 
@@ -72,5 +73,11 @@ class AdaptivePerceptualUnPairedModel(AdaptiveUnPairedModel):
             loss_G_avg = -torch.mean(pred_fake)
             psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
-        return {'loss_D_avg': loss_D_avg.item(), 'loss_G_avg': loss_G_avg.item(), 'loss_pixel_avg': loss_pixel.item(), 'loss_perceptual': loss_perceptual.item(), 'psnr_avg': psnr_avg,
-                'tv_cons': tv_cons.item(), 'mn_cons': mn_cons.item(), 'weights_norm': weights_norm.item()}
+        return {'psnr_avg': psnr_avg,
+                'loss_D_avg': loss_D_avg.item(),
+                'loss_G_avg': loss_G_avg.item(),
+                'mse_avg': loss_pixel.item(),
+                'perceptual': loss_perceptual.item(),
+                'tv_cons': tv_cons.item(),
+                'mn_cons': mn_cons.item(),
+                'weights_norm': weights_norm.item()}

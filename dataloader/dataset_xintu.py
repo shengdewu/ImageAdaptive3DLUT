@@ -31,10 +31,8 @@ def search_files(root, txt, skip_name):
     return file_names
 
 
-@DATASET_ARCH_REGISTRY.register()
-class ImageDataSetXinTu(Dataset):
-    def __init__(self, cfg, mode="train"):
-
+class ImageDataSet(Dataset):
+    def __init__(self, cfg, mode):
         root = cfg.DATALOADER.DATA_PATH
         self.mode = mode
 
@@ -44,11 +42,9 @@ class ImageDataSetXinTu(Dataset):
             self.skip_name = [name.strip('\n') for name in file.readlines()]
             file.close()
 
-        set1_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_INPUT_TXT, self.skip_name)
-        set2_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_LABEL_TXT, self.skip_name)
+        self.set1_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_INPUT_TXT, self.skip_name)
+        self.set2_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_LABEL_TXT, self.skip_name)
         self.test_input_files = search_files(root, cfg.DATALOADER.XT_TEST_TXT, self.skip_name)
-
-        self.set_input_files = set1_input_files + set2_input_files
 
         test_max_nums = cfg.DATALOADER.get('XT_TEST_MAX_NUMS', len(self.test_input_files))
         if 0 < test_max_nums < len(self.test_input_files):
@@ -70,6 +66,17 @@ class ImageDataSetXinTu(Dataset):
             self.train_saturation = cfg.INPUT.TRAINING_COLOR_JITTER.SATURATION
 
         logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}-{}/{}/{}'.format(self.__class__, self.color_jitter_train, self.train_brightness, self.train_contrast, self.train_saturation))
+        return
+
+    def __getitem__(self, index):
+        raise NotImplemented('the loop must be implement')
+
+
+@DATASET_ARCH_REGISTRY.register()
+class ImageDataSetXinTu(ImageDataSet):
+    def __init__(self, cfg, mode="train"):
+        super(ImageDataSetXinTu, self).__init__(cfg, mode)
+        self.set_input_files = self.set1_input_files + self.set2_input_files
         return
 
     def __getitem__(self, index):
@@ -170,30 +177,9 @@ class ImageDataSetXinTu(Dataset):
 
 
 @DATASET_ARCH_REGISTRY.register()
-class ImageDataSetXinTuUnpaired(Dataset):
+class ImageDataSetXinTuUnpaired(ImageDataSet):
     def __init__(self, cfg, mode="train"):
-
-        root = cfg.DATALOADER.DATA_PATH
-        self.mode = mode
-
-        self.skip_name = list()
-        if os.path.exists(os.path.join(root, 'skip.txt')):
-            file = open(os.path.join(root, 'skip.txt'), 'r')
-            self.skip_name = [name.strip('\n') for name in file.readlines()]
-            file.close()
-
-        self.set1_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_INPUT_TXT, self.skip_name)
-        self.set2_input_files = search_files(root, cfg.DATALOADER.XT_TRAIN_LABEL_TXT, self.skip_name)
-        self.test_input_files = search_files(root, cfg.DATALOADER.XT_TEST_TXT, self.skip_name)
-
-        test_max_nums = cfg.DATALOADER.get('XT_TEST_MAX_NUMS', len(self.test_input_files))
-        if 0 < test_max_nums < len(self.test_input_files):
-            index = [i for i in range(len(self.test_input_files))]
-            index = np.random.choice(index, test_max_nums, replace=False)
-            self.test_input_files = [self.test_input_files[i] for i in index]
-
-        self.color_jitter = ColorJitter(cfg.INPUT.COLOR_JITTER, cfg.OUTPUT_LOG_NAME)
-        self.color_jitter_prob = cfg.INPUT.COLOR_JITTER.PROB
+        super(ImageDataSetXinTuUnpaired, self).__init__(cfg, mode)
         return
 
     def __getitem__(self, index):
@@ -204,8 +190,7 @@ class ImageDataSetXinTuUnpaired(Dataset):
             img_input = cv2.cvtColor(cv2.imread(input_file[0], -1), cv2.COLOR_BGR2RGB)
             img_exptC = cv2.cvtColor(cv2.imread(input_file[1], -1), cv2.COLOR_BGR2RGB)
             seed = random.randint(1, len(self.set2_input_files))
-            img2 = cv2.cvtColor(cv2.imread(self.set2_input_files[(index + seed) % len(self.set2_input_files)][1]), cv2.COLOR_BGR2RGB)
-
+            img2 = cv2.cvtColor(cv2.imread(self.set2_input_files[(index + seed) % len(self.set2_input_files)][1], -1), cv2.COLOR_BGR2RGB)
         else:
             input_file = self.test_input_files[index % len(self.test_input_files)]
             img_name = os.path.split(input_file[0])[-1]
@@ -214,20 +199,29 @@ class ImageDataSetXinTuUnpaired(Dataset):
             img2 = img_exptC
 
         if self.mode == "train":
-            if img_exptC.shape[:2] != img_input.shape[:2] or img2.shape[:2] != img_input.shape[:2]:
-                ratio_H = np.random.uniform(0.8, 1.0)
-                ratio_W = np.random.uniform(0.8, 1.0)
-                W, H = img_input.shape[1], img_input.shape[0]
-                crop_h = round(H * ratio_H)
-                crop_w = round(W * ratio_W)
-                W2, H2 = img2.shape[1], img2.shape[0]
-                crop_h = min(crop_h, H2)
-                crop_w = min(crop_w, W2)
-                i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
-                img_input = TF_x.crop(img_input, i, j, h, w)
-                img_exptC = TF_x.crop(img_exptC, i, j, h, w)
-                i, j, h, w = TF_x.get_crop_params(img2, output_size=(crop_h, crop_w))
-                img2 = TF_x.crop(img2, i, j, h, w)
+            # if img_exptC.shape[:2] != img_input.shape[:2] or img2.shape[:2] != img_input.shape[:2]:
+            #     ratio_H = np.random.uniform(0.8, 1.0)
+            #     ratio_W = np.random.uniform(0.8, 1.0)
+            #     W, H = img_input.shape[1], img_input.shape[0]
+            #     crop_h = round(H * ratio_H)
+            #     crop_w = round(W * ratio_W)
+            #     W2, H2 = img2.shape[1], img2.shape[0]
+            #     crop_h = min(crop_h, H2)
+            #     crop_w = min(crop_w, W2)
+            #     i, j, h, w = TF_x.get_crop_params(img_input, output_size=(crop_h, crop_w))
+            #     img_input = TF_x.crop(img_input, i, j, h, w)
+            #     img_exptC = TF_x.crop(img_exptC, i, j, h, w)
+            #     i, j, h, w = TF_x.get_crop_params(img2, output_size=(crop_h, crop_w))
+            #     img2 = TF_x.crop(img2, i, j, h, w)
+            w = min(img_input.shape[1], img_exptC.shape[1], img2.shape[1])
+            h = min(img_input.shape[0], img_exptC.shape[0], img2.shape[1])
+
+            if img_input.shape[:2] != (h, w):
+                img_input = img_input[0:h, 0:w, :]
+            if img_exptC.shape[:2] != (h, w):
+                img_exptC = img_exptC[0:h, 0:w, :]
+            if img2.shape[:2] != (h, w):
+                img2 = img2[0:h, 0:w, :]
 
         img_input = TF_x.to_tensor(img_input)
         img_exptC = TF_x.to_tensor(img_exptC)
@@ -236,6 +230,15 @@ class ImageDataSetXinTuUnpaired(Dataset):
         if self.mode == 'train':
             if np.random.random() <= self.color_jitter_prob:
                 img_input = self.color_jitter(img_input)
+
+            if self.color_jitter_train:
+                img_exptC = TF.adjust_brightness(img_exptC, self.train_brightness)
+                img_exptC = TF.adjust_contrast(img_exptC, self.train_contrast)
+                img_exptC = TF.adjust_saturation(img_exptC, self.train_saturation)
+
+                img2 = TF.adjust_brightness(img2, self.train_brightness)
+                img2 = TF.adjust_contrast(img2, self.train_contrast)
+                img2 = TF.adjust_saturation(img2, self.train_saturation)
 
         return {"A_input": img_input, "A_exptC": img_exptC, "B_exptC": img2, "input_name": img_name}
 
