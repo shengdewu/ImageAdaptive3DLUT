@@ -9,8 +9,6 @@ class AdaptivePerceptualPairedModel(AdaptivePairedModel):
     def __init__(self, cfg):
         super(AdaptivePerceptualPairedModel, self).__init__(cfg)
         self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
-        self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
-
         self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, device=self.device, path=cfg.MODEL.VGG.VGG_PATH)
 
         return
@@ -33,7 +31,9 @@ class AdaptivePerceptualPairedModel(AdaptivePairedModel):
 
         loss_perceptual = self.criterion_perceptual(fake_B, real_B)
 
-        loss = self.lambda_pixel * loss_pixel + self.lambda_perceptual * loss_perceptual + self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + self.lambda_monotonicity * mn_cons
+        loss = self.lambda_pixel * loss_pixel + self.lambda_perceptual * loss_perceptual + \
+               self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + \
+               self.lambda_monotonicity * mn_cons
 
         psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 

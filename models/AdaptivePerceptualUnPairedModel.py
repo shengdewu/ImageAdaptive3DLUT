@@ -11,8 +11,6 @@ class AdaptivePerceptualUnPairedModel(AdaptiveUnPairedModel):
     def __init__(self, cfg):
         super(AdaptivePerceptualUnPairedModel, self).__init__(cfg)
         self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
-        self.lambda_class_smooth = cfg.SOLVER.LAMBDA_CLASS_SMOOTH
-
         self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)
         return
 
@@ -64,7 +62,10 @@ class AdaptivePerceptualUnPairedModel(AdaptiveUnPairedModel):
             tv_cons = sum(tv1) + tv0
             mn_cons = sum(mn1) + mn0
 
-            loss_G = -torch.mean(pred_fake) + self.lambda_pixel * loss_pixel + self.lambda_perceptual * loss_perceptual + self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + self.lambda_monotonicity * mn_cons
+            loss_G = -torch.mean(pred_fake) + self.lambda_pixel * loss_pixel + \
+                     self.lambda_perceptual * loss_perceptual + \
+                     self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + \
+                     self.lambda_monotonicity * mn_cons
 
             loss_G.backward()
 

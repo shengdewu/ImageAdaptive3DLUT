@@ -8,6 +8,7 @@ import logging
 from engine.log.logger import setup_logger
 import engine.comm as comm
 from engine.checkpoint.functional import get_model_state_dict, load_model_state_dict, load_checkpoint_state_dict
+from engine.loss.vgg_loss import PerceptualLoss
 from models.gan_loss import GanLoss
 
 
@@ -18,13 +19,15 @@ class AdaptiveGLUnPairedModel(AdaptivePairedModel):
         setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=__name__)
         self.lambda_gp = cfg.SOLVER.LAMBDA_GP
         self.n_critic = cfg.SOLVER.N_CRITIC
+        self.lambda_perceptual = cfg.SOLVER.LAMBDA_PERCEPTUAL
+
+        self.criterion_perceptual = PerceptualLoss(cfg.MODEL.VGG.VGG_LAYER, path=cfg.MODEL.VGG.VGG_PATH)
 
         self.discriminator = PatchDiscriminator(device=cfg.MODEL.DEVICE)
         self.discriminator.apply(weights_init_normal)
 
         # Loss functions
         self.criterion_GAN = GanLoss(torch.nn.MSELoss(reduction='none'), device=cfg.MODEL.DEVICE)
-
         self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=cfg.SOLVER.BASE_LR, betas=(cfg.SOLVER.ADAM.B1, cfg.SOLVER.ADAM.B2))
         return
 
@@ -60,6 +63,7 @@ class AdaptiveGLUnPairedModel(AdaptivePairedModel):
         # ------------------
         loss_G_avg = torch.zeros(1)
         loss_pixel = torch.zeros(1)
+        loss_perceptual = torch.zeros(1)
         tv_cons = 0.0
         mn_cons = 0.0
         if epoch % self.n_critic == 0:
@@ -70,6 +74,7 @@ class AdaptiveGLUnPairedModel(AdaptivePairedModel):
             loss_fake = self.criterion_GAN(pred_fake, True)
             # Pixel-wise loss
             loss_pixel = self.criterion_pixelwise(fake_B, real_A)
+            loss_perceptual = self.criterion_perceptual(fake_B, real_B)
 
             tv0, mn0 = self.tv3(self.lut0)
             tv1, mn1 = self.lut1.tv(self.tv3)
@@ -77,7 +82,9 @@ class AdaptiveGLUnPairedModel(AdaptivePairedModel):
             tv_cons = sum(tv1) + tv0
             mn_cons = sum(mn1) + mn0
 
-            loss_G = -torch.mean(loss_fake) + self.lambda_pixel * loss_pixel + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
+            loss_G = -torch.mean(loss_fake) + self.lambda_pixel * loss_pixel + \
+                     self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + \
+                     self.lambda_monotonicity * mn_cons + self.lambda_perceptual * loss_perceptual
 
             loss_G.backward()
 
@@ -86,8 +93,14 @@ class AdaptiveGLUnPairedModel(AdaptivePairedModel):
             loss_G_avg = -torch.mean(loss_fake)
             psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
-        return {'loss_D_avg': loss_D_avg.item(), 'loss_G_avg': loss_G_avg.item(), 'loss_pixel_avg': loss_pixel.item(), 'psnr_avg': psnr_avg,
-                'tv_cons': tv_cons.item(), 'mn_cons': mn_cons.item(), 'weights_norm': weights_norm.item()}
+        return {'psnr_avg': psnr_avg,
+                'loss_D_avg': loss_D_avg.item(),
+                'loss_G_avg': loss_G_avg.item(),
+                'mse_avg': loss_pixel.item(),
+                'perceptual': loss_perceptual.item(),
+                'tv_cons': tv_cons.item(),
+                'mn_cons': mn_cons.item(),
+                'weights_norm': weights_norm.item()}
 
     def enable_train(self):
         self.lut0.train()
