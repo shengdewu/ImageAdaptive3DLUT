@@ -5,10 +5,13 @@ from torch.utils.data import Dataset
 import cv2
 import dataloader.torchvision_x_functional as TF_x
 import torchvision.transforms.functional as TF
+import engine.transforms.functional as ETF
 from dataloader.build import DATASET_ARCH_REGISTRY
 from PIL import Image
 from dataloader.augmentation import ColorJitter
+from dataloader.augmentation import AdaptiveOverExposure
 import logging
+import torch
 
 
 def search_files(root, txt, skip_name):
@@ -55,17 +58,27 @@ class ImageDataSet(Dataset):
         self.color_jitter = ColorJitter(cfg.INPUT.COLOR_JITTER, cfg.OUTPUT_LOG_NAME)
         self.color_jitter_prob = cfg.INPUT.COLOR_JITTER.PROB
 
+        self.input_over_exposure_enable = cfg.INPUT.INPUT_OVER_EXPOSURE.ENABLED
+        self.input_over_exposure = AdaptiveOverExposure(f_min=cfg.INPUT.INPUT_OVER_EXPOSURE.F_MIN,
+                                                        f_max=cfg.INPUT.INPUT_OVER_EXPOSURE.F_MAX,
+                                                        f_value=cfg.INPUT.INPUT_OVER_EXPOSURE.F_VALUE,
+                                                        log_name=cfg.OUTPUT_LOG_NAME)
+
         self.color_jitter_train = False
         self.train_brightness = 1
         self.train_contrast = 1
         self.train_saturation = 1
         if cfg.INPUT.get('TRAINING_COLOR_JITTER', None) is not None:
             self.color_jitter_train = cfg.INPUT.TRAINING_COLOR_JITTER.ENABLE
-            self.train_brightness = cfg.INPUT.TRAINING_COLOR_JITTER.BRIGHTNESS
+            self.train_brightness_threshold = cfg.INPUT.TRAINING_COLOR_JITTER.BRIGHTNESS.THRESHOLD
+            self.train_brightness_max = cfg.INPUT.TRAINING_COLOR_JITTER.BRIGHTNESS.MAX
+            self.train_darkness_threshold = cfg.INPUT.TRAINING_COLOR_JITTER.DARKNESS.THRESHOLD
+            self.train_darkness_min = cfg.INPUT.TRAINING_COLOR_JITTER.DARKNESS.MIN
+            assert self.train_darkness_min <= 1.0 and self.train_brightness_max >= 1.0, 'the DARKNESS.MIN must be smaller than 1.0 and the BRIGHTNESS.MAX must be bigger than 1.0'
             self.train_contrast = cfg.INPUT.TRAINING_COLOR_JITTER.CONTRAST
             self.train_saturation = cfg.INPUT.TRAINING_COLOR_JITTER.SATURATION
 
-        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}-{}/{}/{}'.format(self.__class__, self.color_jitter_train, self.train_brightness, self.train_contrast, self.train_saturation))
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}'.format(self.__class__, cfg.INPUT.get('TRAINING_COLOR_JITTER', '')))
         return
 
     def __getitem__(self, index):
@@ -114,13 +127,23 @@ class ImageDataSetXinTu(ImageDataSet):
         img_expert = TF_x.to_tensor(img_expert)
 
         if self.mode == 'train':
+            if self.input_over_exposure_enable:
+                img_input = self.input_over_exposure(img_input, img_expert)
+
             if np.random.random() <= self.color_jitter_prob:
                 img_input = self.color_jitter(img_input)
 
             if self.color_jitter_train:
-                img_expert = TF.adjust_brightness(img_expert, self.train_brightness)
                 img_expert = TF.adjust_contrast(img_expert, self.train_contrast)
                 img_expert = TF.adjust_saturation(img_expert, self.train_saturation)
+
+                expert_gray = float(torch.mean(0.299 * img_expert[0] + 0.587 * img_expert[1] + 0.114 * img_expert[2]))
+                if expert_gray < self.train_brightness_threshold:
+                    if self.train_brightness_max != 1.0:
+                        img_expert = ETF.adjust_brightness_adaptive(img_expert, 1.0, self.train_brightness_max)
+                elif expert_gray > self.train_darkness_threshold:
+                    if self.train_darkness_min != 1.0:
+                        img_expert = ETF.adjust_brightness_adaptive(img_expert, self.train_darkness_min, 1.0)
 
         # img_sample = torch.cat((img_input, img_expert_ori, img_expert), -1)
         # ndarr = img_sample.mul(255.0).add_(0.5).clamp_(0, 255.0).permute(1, 2, 0).numpy().astype(np.uint8)
