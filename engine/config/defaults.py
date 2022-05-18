@@ -42,12 +42,6 @@ _C.DATALOADER.NUM_WORKERS = 4
 # INPUT
 # -----------------------------------------------------------------------------
 _C.INPUT = CfgNode(new_allowed=True)
-_C.INPUT.MIN_SIZE_TRAIN = (640, 672, 704, 736, 768, 800)
-_C.INPUT.MIN_SIZE_TRAIN_SAMPLING = "choice"
-_C.INPUT.MAX_SIZE_TRAIN = 1333
-
-_C.INPUT.FORMAT = "BGR"
-
 
 _C.OUTPUT_DIR = ''
 _C.OUTPUT_LOG_NAME = __name__

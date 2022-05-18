@@ -32,6 +32,7 @@ def merge_config():
         VGG_PATH = cfg.MODEL.VGG.VGG_PATH
         WEIGHTS = cfg.MODEL.WEIGHTS
         PRETRAINED_PATH = cfg.MODEL.CLASSIFIER.PRETRAINED_PATH
+        DOWN_FACTOR = cfg.MODEL.CLASSIFIER.DOWN_FACTOR
         device = cfg.MODEL.DEVICE
 
         cfg.SOLVER = hcfg.SOLVER
@@ -40,6 +41,7 @@ def merge_config():
         cfg.MODEL.VGG.VGG_PATH = VGG_PATH
         cfg.MODEL.WEIGHTS = WEIGHTS
         cfg.MODEL.CLASSIFIER.PRETRAINED_PATH = PRETRAINED_PATH
+        cfg.MODEL.CLASSIFIER.DOWN_FACTOR = DOWN_FACTOR
         cfg.MODEL.DEVICE = device
     cfg.freeze()
     return cfg
