@@ -12,5 +12,5 @@ and expected to return a `nn.Module` object.
 
 
 def build_classifier(cfg):
-    model = CLASSIFIER_ARCH_REGISTRY.get(cfg.MODEL.CLASSIFIER.ARCH,)(cfg)
+    model = CLASSIFIER_ARCH_REGISTRY.get(cfg.MODEL.CLASSIFIER.ARCH)(cfg)
     return model
