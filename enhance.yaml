@@ -28,7 +28,7 @@ SOLVER:
 MODEL:
   WEIGHTS: ''
   VGG:
-    VGG_PATH: /mnt/sda2/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
+    VGG_PATH: /mnt/sdb/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
     VGG_LAYER: 14
   DEVICE: cuda
   ARCH: AdaptivePerceptualPairedModel
@@ -37,14 +37,14 @@ MODEL:
     DIMS: 64
     ZERO_LUT: True
   CLASSIFIER:
-    PRETRAINED_PATH: /mnt/sda2/pretrain.model/resnet/resnet50-0676ba61.pth
-    ARCH: ClassifierResnet
-    RESNET_ARCH: resnet50
-    RESNET_NORMAL: InstanceNorm2d
+#    PRETRAINED_PATH: /mnt/sda2/pretrain.model/resnet/resnet50-0676ba61.pth
+    ARCH: Classifier
+#    RESNET_ARCH: resnet50
+#    RESNET_NORMAL: InstanceNorm2d
 
 DATALOADER:
   NUM_WORKERS: 1
-  DATA_PATH: /train.cache/xt.image.enhance.540
+  DATA_PATH: /home/shengdewu/data/xt.image.enhancement.540
   DATASET: ImageDataSetXinTu
   XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
   XT_TRAIN_LABEL_TXT: "no_aug.train_label.txt"
@@ -87,4 +87,4 @@ INPUT:
     SATURATION: 1.0
 
 OUTPUT_LOG_NAME: "image.lut"
-OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/image.lut.test
+OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/image.lut.samll
