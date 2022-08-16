@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <opencv2/core/simd_intrinsics.hpp>
 #include "enhance.h"
+#include "onnx_enhance.h"
 
 
 void bat_test(std::string file_list_txt, std::string root_path, std::string out_root){
@@ -84,10 +85,12 @@ int main(int argc, char** argv){
     // bat_test("/mnt/sda1/wokspace/ImageCureEnhance/dir/base2.all.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000", "/mnt/sda1/enhance.test/cpp_mnn");
 
     std::string mnn_path = "/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/lut.mnn";
+    std::string onnx_path = "/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/lut.onnx";
 
     auto init_time = std::chrono::system_clock::now();
 
     ImgEnhance img_enhance(mnn_path, 8);
+    OnnxImgEnhance onnx_img_enhance(onnx_path, 8);
 
     std::vector<std::string> img_path;
     img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif/儿童/01浅色实景/儿童SJ (31)/161082062385739907252.tif");
@@ -105,10 +108,14 @@ int main(int argc, char** argv){
         // std::cout << min_val << "," << max_val << std::endl;
         auto en_time = std::chrono::system_clock::now();
 
-        cv::Mat enhance_img = img_enhance.run(img_rgb);
+        cv::Mat enhance_img = img_enhance.run(img_rgb, 512);
+        cv::Mat onnx_enhance_img = onnx_img_enhance.run(img_rgb, 512);
 
         cv::Mat enhance_img_bgr;
         cv::cvtColor(enhance_img, enhance_img_bgr, cv::COLOR_RGB2BGR);
+
+        cv::Mat onnx_enhance_img_bgr;
+        cv::cvtColor(onnx_enhance_img, onnx_enhance_img_bgr, cv::COLOR_RGB2BGR);
 
         // auto convert_time = std::chrono::system_clock::now();
         // cv::Mat enhance_255 =(enhance_img*255);
@@ -120,6 +127,7 @@ int main(int argc, char** argv){
         // spend_time("convert time ", convert_time);
         cv::Mat concat;
         cv::hconcat(img_bgr, enhance_img_bgr, concat);
+        cv::hconcat(concat, onnx_enhance_img_bgr, concat);
         size_t spos = img_path[i].rfind('/')+1;
         size_t epos = img_path[i].find(".tif");
         cv::imwrite(img_path[i].substr(spos, epos-spos)+".jpg", concat);
