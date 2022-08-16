@@ -47,7 +47,6 @@ OnnxImgEnhance::~OnnxImgEnhance(){
 
 cv::Mat OnnxImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
 
-    auto init_mat_time = std::chrono::system_clock::now();
     cv::Mat img_rgb_normal;
     img_rgb.convertTo(img_rgb_normal, CV_32FC3, 1.0/255.0);
 
@@ -67,7 +66,7 @@ cv::Mat OnnxImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     std::vector<int64_t> input_dims {1,  in_img.channels(), in_img.rows, in_img.cols};
     size_t input_tensor_size = input_dims[0] * input_dims[1] * input_dims[2] * input_dims[3];
     std::vector<float> input_tensor_values(input_tensor_size);
-    input_tensor_values.assign(in_img.begin<float>(), in_img.end<float>());
+    input_tensor_values.assign(nchw_img.begin<float>(), nchw_img.end<float>());
     
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
     Ort::AllocatorWithDefaultOptions allocator;

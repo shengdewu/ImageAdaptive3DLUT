@@ -50,7 +50,6 @@ ImgEnhance::~ImgEnhance(){
 
 cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
 
-    auto init_mat_time = std::chrono::system_clock::now();
     cv::Mat img_rgb_normal;
     img_rgb.convertTo(img_rgb_normal, CV_32FC3, 1.0/255.0);
 
@@ -62,15 +61,10 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     std::cout << "in_img: " << in_img.rows << "," << in_img.cols << "," << in_img.channels() << std::endl;
     std::cout << "nchw_img: " << nchw_img.rows << "," << nchw_img.cols << "," << nchw_img.channels() << "," << nchw_img.dims << std::endl;
 
-
-    auto init_calc_time = std::chrono::system_clock::now();
-
     int d_w = in_img.size().width;
     int d_h = in_img.size().height;
     int d_c = in_img.channels();
     assert(d_c == 3);
-
-    std::cout << in_img.at<float>(0, 0) << "," << in_img.at<float>(d_w, d_h) << std::endl;
 
     MNN::Session* mnn_session = create_session();
 
@@ -89,9 +83,9 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
 
     input_tensor = _mnn_interpreter->getSessionInput(mnn_session, nullptr);
     auto nchw_tensor = new MNN::Tensor(input_tensor, input_tensor->getDimensionType());
-    std::cout << nchw_tensor->height() * nchw_tensor->width() * nchw_tensor->batch() * nchw_tensor->channel() << "," << d_c*d_h*d_w << std::endl;
-    std::cout << nchw_tensor->host<float>()[0] << "," << nchw_tensor->host<float>()[d_h*d_w] << std::endl;
-    memccpy(nchw_tensor->host<float>(), reinterpret_cast<float*>(const_cast<unsigned char*>(nchw_img.data)), 0, 1*d_c*d_h*d_w);
+    // memccpy(nchw_tensor->host<float>(), reinterpret_cast<float*>(const_cast<unsigned char*>(nchw_img.data)), 0, 1*d_c*d_h*d_w); // error
+    // memccpy(nchw_tensor->buffer().host, nchw_img.data, 0, 1*d_c*d_h*d_w); // error
+    memmove(nchw_tensor->buffer().host, nchw_img.data, 1*d_c*d_h*d_w * sizeof(float));
     input_tensor->copyFromHostTensor(nchw_tensor);
     delete nchw_tensor;
 
