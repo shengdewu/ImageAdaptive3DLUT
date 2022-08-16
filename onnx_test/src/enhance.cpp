@@ -85,7 +85,7 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     auto nchw_tensor = new MNN::Tensor(input_tensor, input_tensor->getDimensionType());
     // memccpy(nchw_tensor->host<float>(), reinterpret_cast<float*>(const_cast<unsigned char*>(nchw_img.data)), 0, 1*d_c*d_h*d_w); // error
     // memccpy(nchw_tensor->buffer().host, nchw_img.data, 0, 1*d_c*d_h*d_w); // error
-    memmove(nchw_tensor->buffer().host, nchw_img.data, 1*d_c*d_h*d_w * sizeof(float));
+    memmove(nchw_tensor->host<float>(), nchw_img.data, 1*d_c*d_h*d_w * sizeof(float));
     input_tensor->copyFromHostTensor(nchw_tensor);
     delete nchw_tensor;
 
@@ -149,6 +149,7 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     std::cout << "start apply lut" << std::endl;
 
     Lut lut_tool;
+
     cv::Mat img_enhance_normal = lut_tool.trilinear(img_rgb_normal, lut_mat);
 
     // cv::Mat img_enhance = triLinear(host_tensor.host<float>(), host_tensor.host<float>(), host_tensor.host<float>(), img_rgb_normal, _lut_dim);
