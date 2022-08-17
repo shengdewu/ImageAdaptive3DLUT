@@ -109,9 +109,9 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     
     std::cout << "start convert lut" << std::endl;
 
-    std::ofstream out_file;
-    out_file.open("/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/build/tlut.txt", std::ios::out);
-    int rindex = 0, bindex=0, gindex=0;
+    // std::ofstream out_file;
+    // out_file.open("/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/build/tlut.txt", std::ios::out);
+    // int rindex = 0, bindex=0, gindex=0;
     for(int bx=0; bx < 8; bx++){
         for(int by=0; by < 8; by++){
             for(int g=0; g < _lut_dim; g++){
@@ -130,21 +130,23 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
                     // out_file << "lut[" << b << "," << g << "," << r << "]=(" << b_ptr[b * b_offset + g * g_offset + r] << "," << 
                     // g_ptr[b * b_offset + g * g_offset + r] << "," <<  r_ptr[b * b_offset + g * g_offset + r] << ")" << std::endl;
 
-                    rindex = b * b_offset + g * g_offset + r;
-                    gindex = b * b_offset + g * g_offset + r + offset;
-                    bindex = b * b_offset + g * g_offset + r + offset * 2;
+                    // rindex = b * b_offset + g * g_offset + r;
+                    // gindex = b * b_offset + g * g_offset + r + offset;
+                    // bindex = b * b_offset + g * g_offset + r + offset * 2;
                 }
             }
         }
     }
 
-    std::cout << offset * 3 << ":" << rindex << "," << gindex << "," << bindex << std::endl;
+    // std::cout << offset * 3 << ":" << rindex << "," << gindex << "," << bindex << std::endl;
 
-    out_file.close();
+    // out_file.close();
 
     cv::Mat ulut = lut_mat * 255;
     ulut.convertTo(ulut, CV_8UC3);
-    cv::imwrite("mnn_lut.jpg", ulut);
+    cv::Mat lut_bgr;
+    cv::cvtColor(ulut, lut_bgr, cv::COLOR_RGB2BGR);
+    cv::imwrite("mnn_lut.jpg", lut_bgr);
 
     std::cout << "start apply lut" << std::endl;
 

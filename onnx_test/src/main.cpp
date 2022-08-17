@@ -37,10 +37,10 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
         std::cout << line << std::endl;
         size_t pos = line.find(split);
         std::string sub_path(line.substr(pos+1, line.size()-ctrl_n.size()));
-        // std::cout << sub_path << std::endl;
+        std::cout << sub_path << std::endl;
         std::string out_path = out_root + "/" + sub_path;
         std::string cmd("mkdir -p " + std::string("\"") + out_path + std::string("\""));
-        // std::cout << cmd << std::endl;
+        std::cout << cmd << std::endl;
         int ret = system(cmd.c_str());
         if(ret){
             std::cout << strerror(errno) << std::endl;
@@ -68,11 +68,16 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
             std::string img_name = img_path + "/" + name ;
 
             cv::Mat img_bgr = cv::imread(img_name, cv::ImreadModes::IMREAD_COLOR);
-            auto enhance_time = std::chrono::system_clock::now();
-            cv::Mat enhance_img = img_enhance.run(img_bgr);
+            cv::Mat img_rgb;
+            cv::cvtColor(img_bgr, img_rgb, cv::COLOR_BGR2RGB);
+
+            cv::Mat enhance_img = img_enhance.run(img_rgb);
+
+            cv::Mat enhance_img_bgr;
+            cv::cvtColor(enhance_img, enhance_img_bgr, cv::COLOR_RGB2BGR);
 
             cv::Mat concat;
-            cv::hconcat(img_bgr, enhance_img, concat);
+            cv::hconcat(img_bgr, enhance_img_bgr, concat);
 
             cv::imwrite(out_name, concat);
         }
@@ -82,7 +87,7 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
 
 
 int main(int argc, char** argv){
-    // bat_test("/mnt/sda1/wokspace/ImageCureEnhance/dir/base2.all.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000", "/mnt/sda1/enhance.test/cpp_mnn");
+    bat_test("/mnt/sda1/wokspace/ImageAdaptive3DLUT/dir/1.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif", "/mnt/sda1/enhance.test/lut_mnn");
 
     std::string mnn_path = "/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/lut.mnn";
     std::string onnx_path = "/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/lut.onnx";
