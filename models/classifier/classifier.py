@@ -6,12 +6,15 @@ from models.functional import weights_init_normal
 import logging
 from engine.checkpoint.functional import load_model_state_dict
 import torch.nn.functional as torch_func
+import torchvision.models.mobilenet
+
 
 __all__ = [
     'Classifier',
     'ClassifierUnpaired',
     'ClassifierResnet',
-    'ClassifierResnetSoftMax'
+    'ClassifierResnetSoftMax',
+    'MobileNet'
 ]
 
 
@@ -201,3 +204,23 @@ class ClassifierResnetSoftMax(ClassifierResnet):
     def forward(self, x):
         c = self.resnet(x)
         return self.softmax(c)
+
+
+@CLASSIFIER_ARCH_REGISTRY.register()
+class MobileNet(torch.nn.Module):
+    def __init__(self, cfg):
+        super(MobileNet, self).__init__()
+        self.backbone = torchvision.models.mobilenet_v3_small(num_classes=cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1)
+        self.down_factor = cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+        assert self.down_factor % 2 == 0 or self.down_factor == 1, 'the {} must be divisible by 2 or equal 1'.format(self.down_factor)
+        self.to(cfg.MODEL.DEVICE)
+        return
+
+    def forward(self, x):
+        if self.down_factor > 1:
+            return self.backbone(torch_func.interpolate(x, scale_factor=1/self.down_factor, mode='bilinear'))
+        else:
+            return self.backbone(x)
+
+    def init_normal_classifier(self):
+        pass

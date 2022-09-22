@@ -7,6 +7,7 @@ COPY  schedule /code/lut/schedule
 COPY  trilinear /code/lut/trilinear
 COPY  trainer /code/lut/trainer
 COPY  main.py /code/lut
+COPY  tonemap /code/lut/tonemap
 
 RUN cd /code/lut/trilinear/cpp && rm -rf build && rm -rf trilinear.* && ls && sh setup.torch1.x.sh
 

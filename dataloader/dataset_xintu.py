@@ -34,6 +34,29 @@ def search_files(root, txt, skip_name):
     return file_names
 
 
+class MaxEdgeResize:
+    def __init__(self, max_edge_length):
+        self.max_edge_length = max_edge_length * 1.0
+        return
+
+    def __call__(self, image):
+        h, w, c = image.shape
+        max_size = max(h, w)
+        scale = self.max_edge_length / max_size
+        if scale < 1.0:
+            if w > h:
+                w = int(self.max_edge_length)
+                h = int(h * scale)
+            else:
+                w = int(w * scale)
+                h = int(self.max_edge_length)
+
+        return cv2.resize(image, (w, h), cv2.INTER_CUBIC)
+
+    def __str__(self):
+        return 'MaxEdgeResize {}'.format(self.max_edge_length)
+
+
 class ImageDataSet(Dataset):
     def __init__(self, cfg, mode):
         root = cfg.DATALOADER.DATA_PATH
@@ -78,7 +101,11 @@ class ImageDataSet(Dataset):
             self.train_contrast = cfg.INPUT.TRAINING_COLOR_JITTER.CONTRAST
             self.train_saturation = cfg.INPUT.TRAINING_COLOR_JITTER.SATURATION
 
-        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {}, training jitter:{}'.format(self.__class__, cfg.INPUT.get('TRAINING_COLOR_JITTER', '')))
+        self.resize_fn = None
+        if cfg.INPUT.get('MAX_SIZE', None) is not None:
+            self.resize_fn = MaxEdgeResize(cfg.INPUT.MAX_SIZE)
+
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('enable {} resize {}, training jitter:{}'.format(self.__class__, self.resize_fn, cfg.INPUT.get('TRAINING_COLOR_JITTER', '')))
         return
 
     def __getitem__(self, index):
@@ -105,6 +132,10 @@ class ImageDataSetXinTu(ImageDataSet):
         img_expert = cv2.cvtColor(cv2.imread(gt_file, -1), cv2.COLOR_BGR2RGB)
 
         if self.mode == 'train':
+            if self.resize_fn is not None:
+                img_input = self.resize_fn(img_input)
+                img_expert = self.resize_fn(img_expert)
+
             w = min(img_input.shape[1], img_expert.shape[1])
             h = min(img_input.shape[0], img_expert.shape[0])
 
