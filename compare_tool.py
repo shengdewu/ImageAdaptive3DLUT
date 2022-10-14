@@ -30,7 +30,7 @@ class CompareBase:
             base_path = compare_paths[0]
             compare_paths = compare_paths[1:]
 
-        base_names = [name for name in os.listdir(base_path)and name.lower().endswith('.jpg')]
+        base_names = [name for name in os.listdir(base_path) if name.lower().endswith('.jpg')]
         for name in tqdm.tqdm(base_names):
             if special_name is not None and name not in special_name:
                 continue
