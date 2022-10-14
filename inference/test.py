@@ -11,7 +11,7 @@ class InferenceNoneGt(Inference):
         super(InferenceNoneGt, self).__init__(cfg, tif)
         return
 
-    def loop(self, cfg, skip=False, special_name=None):
+    def loop(self, cfg, skip=False, special_name=None, suppress_size=0):
         if special_name is not None:
             assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
 
@@ -42,6 +42,19 @@ class InferenceNoneGt(Inference):
 
             combine_lut = self.model.generate_lut(real_A)
             _, fake_B = self.triliear(combine_lut, real_A)
+
+            # 对插值后的结果添加如下处理代码：
+            # real_A [0,1] float  [h, w, c]
+            # fake_B  lut插值后的输出 [0,1] float  [h, w, c]
+            # suppress_size = 10
+            if suppress_size > 0:
+                lut_gain = torch.mean(fake_B[:, :, ::suppress_size, ::suppress_size]) / torch.mean(real_A[:, :, ::suppress_size, ::suppress_size])
+                w = 32 * ((real_A - 0.5) ** 6)
+                if lut_gain > 1:
+                    w[real_A > 0.5] = 0
+                else:
+                    w[real_A < 0.5] = 0
+                fake_B = (1 - w) * fake_B + w * real_A
 
             img_sample = torch.cat((real_A, fake_B), -1)
 
