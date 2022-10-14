@@ -58,7 +58,7 @@ class InferenceNoneGt(Inference):
 
             img_sample = torch.cat((real_A, fake_B), -1)
 
-            Inference.save_image(img_sample, '{}/{}'.format(output, input_name), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
+            Inference.save_image(img_sample, '{}/{}'.format(output, input_name), flag='{}-{}'.format(self.flag, suppress_size > 0), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
         return
 
 

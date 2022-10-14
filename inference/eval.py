@@ -34,6 +34,7 @@ class Inference:
         self.triliear = TrilinearInterpolationModel().to(cfg.MODEL.DEVICE)
         self.device = cfg.MODEL.DEVICE
         self.model_path = cfg.MODEL.WEIGHTS
+        self.flag = self.model_path.split('/')[-2]
         return
 
     def loop(self, cfg, skip=False, special_name=None):
@@ -92,12 +93,17 @@ class Inference:
 
     @staticmethod
     @torch.no_grad()
-    def save_image(tensor, fp, unnormalizing_value=255, **kwargs):
+    def save_image(tensor, fp, unnormalizing_value=255, flag='', **kwargs):
         fmt = np.uint8 if unnormalizing_value == 255 else np.uint16
         grid = torchvision.utils.make_grid(tensor, **kwargs)
         # Add 0.5 after unnormalizing to [0, unnormalizing_value] to round to nearest integer
         ndarr = grid.mul(unnormalizing_value).add_(0.5).clamp_(0, unnormalizing_value).permute(1, 2, 0).to('cpu').numpy().astype(fmt)
-        cv2.imwrite(fp, ndarr[:, :, ::-1])
+        ndarr = ndarr[:, :, ::-1]
+        if flag != '':
+            ndarr = np.ascontiguousarray(ndarr)
+            h, w, c = ndarr.shape
+            cv2.putText(ndarr, '{}'.format(flag), (w // 2 + int(w * 0.01), int(h * 0.02)), cv2.FONT_HERSHEY_PLAIN, 4, [0, 0, 255], thickness=2)
+        cv2.imwrite(fp, ndarr)
         return
 
     @staticmethod
