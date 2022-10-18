@@ -62,6 +62,16 @@ class Classifier(torch.nn.Module):
         return self.model(img_input)
 
 
+class MobileNet(torch.nn.Module):
+    def __init__(self, nums):
+        super(MobileNet, self).__init__()
+        self.backbone = torchvision.models.mobilenet_v3_small(num_classes=nums + 1)
+        return
+
+    def forward(self, x):
+        return self.backbone(x)
+
+
 class LutModel(torch.nn.Module):
     def __init__(self, cfg):
         super(LutModel, self).__init__()
@@ -76,7 +86,7 @@ class LutModel(torch.nn.Module):
         for i in range(supplement_nums):
             self.supplement_lut[i] = torch.nn.Parameter(torch.zeros(3, dim, dim, dim, dtype=torch.float)).requires_grad_(False)
 
-        self.classifier = Classifier(cfg.MODEL.LUT.SUPPLEMENT_NUMS)
+        self.classifier = MobileNet(cfg.MODEL.LUT.SUPPLEMENT_NUMS)
 
         self.eval()
         return
@@ -212,6 +222,14 @@ def onnx_run(down_factor, in_path, out_path, ort_session):
 
         real_a = torch.from_numpy(normalized(img_rgb).transpose((2, 0, 1))).unsqueeze(0)
         _, enhance_img = trilinear(lut, real_a)
+
+        lut_gain = torch.mean(enhance_img[:, :, ::10, ::10]) / torch.mean(real_a[:, :, ::10, ::10])
+        w = 32 * ((real_a - 0.5) ** 6)
+        if lut_gain > 1:
+            w[real_a > 0.5] = 0
+        else:
+            w[real_a < 0.5] = 0
+        enhance_img = (1 - w) * enhance_img + w * real_a
 
         save_image(torch.cat((real_a, enhance_img), -1), os.path.join(out_path, img_name), nrow=1, normalize=False)
 
