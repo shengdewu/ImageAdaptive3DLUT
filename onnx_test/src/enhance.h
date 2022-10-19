@@ -28,8 +28,7 @@ class ImgEnhance{
         
         cv::Size scale_longe_edge(cv::Size size, size_t ref_size);
 
-        // cv::Mat triLinear(const cv::Mat &r_lut, const cv::Mat &g_lut, const cv::Mat &b_lut, const cv::Mat &image, const int dim);
-        cv::Mat triLinear(const float *r_lut, const float *g_lut, const float *b_lut, const cv::Mat &image, const int dim);
+        void convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim);
 
     private:
         int _lut_dim;

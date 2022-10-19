@@ -22,6 +22,8 @@ class OnnxImgEnhance{
 
         cv::Size scale_longe_edge(cv::Size size, size_t ref_size);
 
+        void convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim);
+
     private:
         int _lut_dim;
         int _lut_channel;

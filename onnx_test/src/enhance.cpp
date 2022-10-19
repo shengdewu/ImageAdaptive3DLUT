@@ -53,9 +53,10 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     cv::Mat img_rgb_normal;
     img_rgb.convertTo(img_rgb_normal, CV_32FC3, 1.0/255.0);
 
-    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), ref_size);
-	cv::Mat in_img;
-	cv::resize(img_rgb_normal, in_img, target_size, 0, 0, cv::INTER_AREA);
+    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), 750);
+
+    cv::Mat in_img;
+    cv::resize(img_rgb_normal, in_img, target_size, 0, 0, cv::INTER_AREA);
     cv::Mat nchw_img = cv::dnn::blobFromImage(in_img, 1.0, in_img.size(), cv::Scalar(), false);
     std::cout << "input_img_bgr_normal: "<< img_rgb_normal.rows << "," << img_rgb_normal.cols << "," << img_rgb_normal.channels() << std::endl;
     std::cout << "in_img: " << in_img.rows << "," << in_img.cols << "," << in_img.channels() << std::endl;
@@ -98,61 +99,31 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
 
     auto output_shape = host_tensor.shape();
     assert(output_shape[1] == _lut_dim);
-
-    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(512, 512), CV_32FC3);
     const float *f_data = host_tensor.host<float>();
-    
-    int offset = _lut_dim*_lut_dim*_lut_dim;
-    const float* r_ptr = f_data;
-    const float* g_ptr = f_data + offset;
-    const float* b_ptr = f_data + offset * 2;
-    
+
+//    cv::Mat out_img = cv::Mat::zeros(img_rgb_normal.rows, img_rgb_normal.cols, img_rgb_normal.type());
+//
+//    Lut::trilinear_forward(const_cast<const float*>(f_data), img_rgb_normal, out_img);
+//
+//    cv::Mat out_img_uint8 = out_img * 255;
+//    out_img_uint8.convertTo(out_img_uint8, CV_8UC3);
+//    return out_img_uint8;
+
+    int lut_size = 64; // 512 for lut dim = 64, 64 for lut dim = 16
+    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(lut_size, lut_size), CV_32FC3);
+
     std::cout << "start convert lut" << std::endl;
-
-    // std::ofstream out_file;
-    // out_file.open("/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/build/tlut.txt", std::ios::out);
-    // int rindex = 0, bindex=0, gindex=0;
-    for(int bx=0; bx < 8; bx++){
-        for(int by=0; by < 8; by++){
-            for(int g=0; g < _lut_dim; g++){
-                for(int r=0; r < _lut_dim; r++){
-                    auto b = bx + by * 8;
-                    auto x = r + bx * 64;
-                    auto y = g + by * 64;
-                    
-                    int b_offset = _lut_dim * _lut_dim;
-                    int g_offset = _lut_dim;
-
-                    lut_mat.at<cv::Vec3f>(y, x)[2] = b_ptr[b * b_offset + g * g_offset + r];
-                    lut_mat.at<cv::Vec3f>(y, x)[1] = g_ptr[b * b_offset + g * g_offset + r]; 
-                    lut_mat.at<cv::Vec3f>(y, x)[0] = r_ptr[b * b_offset + g * g_offset + r];
-
-                    // out_file << "lut[" << b << "," << g << "," << r << "]=(" << b_ptr[b * b_offset + g * g_offset + r] << "," << 
-                    // g_ptr[b * b_offset + g * g_offset + r] << "," <<  r_ptr[b * b_offset + g * g_offset + r] << ")" << std::endl;
-
-                    // rindex = b * b_offset + g * g_offset + r;
-                    // gindex = b * b_offset + g * g_offset + r + offset;
-                    // bindex = b * b_offset + g * g_offset + r + offset * 2;
-                }
-            }
-        }
-    }
-
-    // std::cout << offset * 3 << ":" << rindex << "," << gindex << "," << bindex << std::endl;
-
-    // out_file.close();
-
+    // 4 for lut dim 16, 8 for lut dim 64
+    convert_lut(f_data, lut_mat, 4, 16);
     cv::Mat ulut = lut_mat * 255;
     ulut.convertTo(ulut, CV_8UC3);
     cv::Mat lut_bgr;
     cv::cvtColor(ulut, lut_bgr, cv::COLOR_RGB2BGR);
-    cv::imwrite("mnn_lut.jpg", lut_bgr);
+    cv::imwrite("/mnt/sda1/workspace/ximg/test/base/mnn_lut.jpg", lut_bgr);
 
     std::cout << "start apply lut" << std::endl;
 
-    Lut lut_tool;
-
-    cv::Mat img_enhance_normal = lut_tool.trilinear(img_rgb_normal, lut_mat);
+    cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
 
     // cv::Mat img_enhance = triLinear(host_tensor.host<float>(), host_tensor.host<float>(), host_tensor.host<float>(), img_rgb_normal, _lut_dim);
     cv::Mat img_enhance = img_enhance_normal * 255;
@@ -229,7 +200,7 @@ void ImgEnhance::create_mnn_env(){
     auto output_shape = tmp_output_map.begin()->second->shape();
     _lut_dim = output_shape[1];
     _lut_channel = output_shape[0];
-    assert (_lut_dim == 64);
+    assert (_lut_dim == 64 || _lut_dim == 16);
     assert (_lut_channel == 3);
     std::cout << "lut name: "<< _lut_name << ", output: " << output_shape << ", dim=" << _lut_dim << ",channel="<<_lut_channel << std::endl;
 }
@@ -303,107 +274,30 @@ cv::Size ImgEnhance::scale_longe_edge(cv::Size size, size_t ref_size){
     return cv::Size (int(target_width+0.5), int(target_height+0.5));
 }
 
+void ImgEnhance::convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim) {
+    // cell_size = 4 for lut dim 16, 8 for lut dim 64
 
-// cv::Mat ImgEnhance::triLinear(const cv::Mat &r_lut, const cv::Mat &g_lut, const cv::Mat &b_lut, const cv::Mat &image, const int dim)
-cv::Mat ImgEnhance::triLinear(const float *r_lut, const float *g_lut, const float *b_lut, const cv::Mat &image, const int dim)
-{
-    cv::Mat img_enhance = cv::Mat::zeros(image.size(), image.type()); //img_rgb_normal.clone();
-    
-    auto binsize = 1.000001 / (dim - 1);
+    int offset = lut_dim*lut_dim*lut_dim;
+    const float* r_ptr = lut_prt;
+    const float* g_ptr = lut_prt + offset;
+    const float* b_ptr = lut_prt + offset * 2;
 
-    image.forEach<cv::Vec3f>([&](cv::Vec3f &rgb, const int position[]) -> void {
-		const float r = rgb[0];
-		const float g = rgb[1];
-		const float b = rgb[2];
-        
-        int r_id = floor(r / binsize);
-        int g_id = floor(g / binsize);
-        int b_id = floor(b / binsize);
+    for(int bx=0; bx < cell_size; bx++){
+        for(int by=0; by < cell_size; by++){
+            for(int g=0; g < lut_dim; g++){
+                for(int r=0; r < lut_dim; r++){
+                    auto b = bx + by * cell_size;
+                    auto x = r + bx * lut_dim;
+                    auto y = g + by * lut_dim;
 
-        float r_d = fmod(r,binsize) / binsize;
-        float g_d = fmod(g,binsize) / binsize;
-        float b_d = fmod(b,binsize) / binsize;
+                    int b_offset = lut_dim * lut_dim;
+                    int g_offset = lut_dim;
 
-        int id000 = r_id + g_id * dim + b_id * dim * dim;
-        int id100 = r_id + 1 + g_id * dim + b_id * dim * dim;
-        int id010 = r_id + (g_id + 1) * dim + b_id * dim * dim;
-        int id110 = r_id + 1 + (g_id + 1) * dim + b_id * dim * dim;
-        int id001 = r_id + g_id * dim + (b_id + 1) * dim * dim;
-        int id101 = r_id + 1 + g_id * dim + (b_id + 1) * dim * dim;
-        int id011 = r_id + (g_id + 1) * dim + (b_id + 1) * dim * dim;
-        int id111 = r_id + 1 + (g_id + 1) * dim + (b_id + 1) * dim * dim;
-
-
-        float w000 = (1-r_d)*(1-g_d)*(1-b_d);
-        float w100 = r_d*(1-g_d)*(1-b_d);
-        float w010 = (1-r_d)*g_d*(1-b_d);
-        float w110 = r_d*g_d*(1-b_d);
-        float w001 = (1-r_d)*(1-g_d)*b_d;
-        float w101 = r_d*(1-g_d)*b_d;
-        float w011 = (1-r_d)*g_d*b_d;
-        float w111 = r_d*g_d*b_d;
-
-		int x_dst = position[1];
-		int y_dst = position[0];
-
-        img_enhance.at<cv::Vec3f>(y_dst, x_dst)[0] = w000 * r_lut[id000] + 
-                                                     w100 * r_lut[id100] +
-                                                     w010 * r_lut[id010] + 
-                                                     w110 * r_lut[id110] +
-                                                     w001 * r_lut[id001] + 
-                                                     w101 * r_lut[id101] +
-                                                     w011 * r_lut[id011] + 
-                                                     w111 * r_lut[id111];
-
-        img_enhance.at<cv::Vec3f>(y_dst, x_dst)[1] = w000 * g_lut[id000] + 
-                                                     w100 * g_lut[id100] +
-                                                     w010 * g_lut[id010] + 
-                                                     w110 * g_lut[id110] +
-                                                     w001 * g_lut[id001] + 
-                                                     w101 * g_lut[id101] +
-                                                     w011 * g_lut[id011] + 
-                                                     w111 * g_lut[id111];
-
-        img_enhance.at<cv::Vec3f>(y_dst, x_dst)[2] = w000 * b_lut[id000] + 
-                                                     w100 * b_lut[id100] +
-                                                     w010 * b_lut[id010] + 
-                                                     w110 * b_lut[id110] +
-                                                     w001 * b_lut[id001] + 
-                                                     w101 * b_lut[id101] +
-                                                     w011 * b_lut[id011] + 
-                                                     w111 * b_lut[id111];
-
-        // img_enhance.at<cv::Vec3f>(y_dst, x_dst)[0] = w000 * r_lut.at<float>(r_id, g_id, b_id) + 
-        //                                              w100 * r_lut.at<float>(r_id + 1, g_id, b_id) +
-        //                                              w010 * r_lut.at<float>(r_id, 1 + g_id, b_id) + 
-        //                                              w110 * r_lut.at<float>(r_id + 1, 1 + g_id, b_id) +
-        //                                              w001 * r_lut.at<float>(r_id, g_id, b_id + 1) + 
-        //                                              w101 * r_lut.at<float>(r_id, g_id, b_id + 1) +
-        //                                              w011 * r_lut.at<float>(r_id, g_id + 1, b_id + 1) + 
-        //                                              w111 * r_lut.at<float>(r_id + 1, g_id + 1, b_id + 1);
-
-        // img_enhance.at<cv::Vec3f>(y_dst, x_dst)[1] = w000 * g_lut.at<float>(r_id, g_id, b_id) + 
-        //                                              w100 * g_lut.at<float>(r_id + 1, g_id, b_id) +
-        //                                              w010 * g_lut.at<float>(r_id, 1 + g_id, b_id) + 
-        //                                              w110 * g_lut.at<float>(r_id + 1, 1 + g_id, b_id) +
-        //                                              w001 * g_lut.at<float>(r_id, g_id, b_id + 1) + 
-        //                                              w101 * g_lut.at<float>(r_id, g_id, b_id + 1) +
-        //                                              w011 * g_lut.at<float>(r_id, g_id + 1, b_id + 1) + 
-        //                                              w111 * g_lut.at<float>(r_id + 1, g_id + 1, b_id + 1);
-
-        // img_enhance.at<cv::Vec3f>(y_dst, x_dst)[2] = w000 * b_lut.at<float>(r_id, g_id, b_id) + 
-        //                                              w100 * b_lut.at<float>(r_id + 1, g_id, b_id) +
-        //                                              w010 * b_lut.at<float>(r_id, 1 + g_id, b_id) + 
-        //                                              w110 * b_lut.at<float>(r_id + 1, 1 + g_id, b_id) +
-        //                                              w001 * b_lut.at<float>(r_id, g_id, b_id + 1) + 
-        //                                              w101 * b_lut.at<float>(r_id, g_id, b_id + 1) +
-        //                                              w011 * b_lut.at<float>(r_id, g_id + 1, b_id + 1) + 
-        //                                              w111 * b_lut.at<float>(r_id + 1, g_id + 1, b_id + 1);
-
-		// img_enhance.at<cv::Vec3f>(y_dst, x_dst)[0] = r;
-		// img_enhance.at<cv::Vec3f>(y_dst, x_dst)[1] = g;
-		// img_enhance.at<cv::Vec3f>(y_dst, x_dst)[2] = b;        
-    });
-
-    return img_enhance * 255;
+                    lut_mat.at<cv::Vec3f>(y, x)[2] = b_ptr[b * b_offset + g * g_offset + r];
+                    lut_mat.at<cv::Vec3f>(y, x)[1] = g_ptr[b * b_offset + g * g_offset + r];
+                    lut_mat.at<cv::Vec3f>(y, x)[0] = r_ptr[b * b_offset + g * g_offset + r];
+                }
+            }
+        }
+    }
 }

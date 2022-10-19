@@ -50,7 +50,8 @@ cv::Mat OnnxImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     cv::Mat img_rgb_normal;
     img_rgb.convertTo(img_rgb_normal, CV_32FC3, 1.0/255.0);
 
-    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), ref_size);
+    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), 750);
+
 	cv::Mat in_img;
 	cv::resize(img_rgb_normal, in_img, target_size, 0, 0, cv::INTER_AREA);
     cv::Mat nchw_img = cv::dnn::blobFromImage(in_img, 1.0, in_img.size(), cv::Scalar(), false);
@@ -92,55 +93,21 @@ cv::Mat OnnxImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size){
     auto output_shape = output_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
     assert(output_shape[1] == _lut_dim);
 
-    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(512, 512), CV_32FC3);    
-    int offset = _lut_dim*_lut_dim*_lut_dim;
-    const float* r_ptr = f_data;
-    const float* g_ptr = f_data + offset;
-    const float* b_ptr = f_data + offset * 2;
-    
+    int lut_size = 64; // 512 for lut dim = 64, 64 for lut dim = 16
+    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(lut_size, lut_size), CV_32FC3);
+
     std::cout << "start convert lut" << std::endl;
-
-    std::ofstream out_file;
-    out_file.open("/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/build/onnx_lut.txt", std::ios::out);
-    int rindex = 0, bindex=0, gindex=0;
-    for(int bx=0; bx < 8; bx++){
-        for(int by=0; by < 8; by++){
-            for(int g=0; g < _lut_dim; g++){
-                for(int r=0; r < _lut_dim; r++){
-                    auto b = bx + by * 8;
-                    auto x = r + bx * 64;
-                    auto y = g + by * 64;
-                    
-                    int b_offset = _lut_dim * _lut_dim;
-                    int g_offset = _lut_dim;
-
-                    lut_mat.at<cv::Vec3f>(y, x)[2] = b_ptr[b * b_offset + g * g_offset + r];
-                    lut_mat.at<cv::Vec3f>(y, x)[1] = g_ptr[b * b_offset + g * g_offset + r]; 
-                    lut_mat.at<cv::Vec3f>(y, x)[0] = r_ptr[b * b_offset + g * g_offset + r];
-
-                    // out_file << "lut[" << b << "," << g << "," << r << "]=(" << b_ptr[b * b_offset + g * g_offset + r] << "," << 
-                    // g_ptr[b * b_offset + g * g_offset + r] << "," <<  r_ptr[b * b_offset + g * g_offset + r] << ")" << std::endl;
-
-                    rindex = b * b_offset + g * g_offset + r;
-                    gindex = b * b_offset + g * g_offset + r + offset;
-                    bindex = b * b_offset + g * g_offset + r + offset * 2;
-                }
-            }
-        }
-    }
-
-    std::cout << offset * 3 << ":" << rindex << "," << gindex << "," << bindex << std::endl;
-
-    out_file.close();
-
+    // 4 for lut dim 16, 8 for lut dim 64
+    convert_lut(f_data, lut_mat, 4, 16);
     cv::Mat ulut = lut_mat * 255;
     ulut.convertTo(ulut, CV_8UC3);
-    cv::imwrite("onnx_lut.jpg", ulut);
+    cv::Mat lut_bgr;
+    cv::cvtColor(ulut, lut_bgr, cv::COLOR_RGB2BGR);
+    cv::imwrite("/mnt/sda1/workspace/ximg/test/base/onnx_lut.jpg", lut_bgr);
 
     std::cout << "start apply lut" << std::endl;
 
-    Lut lut_tool;
-    cv::Mat img_enhance_normal = lut_tool.trilinear(img_rgb_normal, lut_mat);
+    cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
 
     // cv::Mat img_enhance = triLinear(host_tensor.host<float>(), host_tensor.host<float>(), host_tensor.host<float>(), img_rgb_normal, _lut_dim);
     cv::Mat img_enhance = img_enhance_normal * 255;
@@ -174,7 +141,7 @@ void OnnxImgEnhance::create_onnx_env(){
     _lut_channel = output_dims[0];
     _lut_dim = output_dims[1];
     _output_names.push_back(name);
-    assert(_lut_dim == 64);
+    assert(_lut_dim == 64 || _lut_dim == 16);
     assert(_lut_channel == 3);
 
     std::cout << "onnx dims = " << _lut_dim << "," << _lut_channel << std::endl;
@@ -197,4 +164,32 @@ cv::Size OnnxImgEnhance::scale_longe_edge(cv::Size size, size_t ref_size){
     }
 
     return cv::Size (int(target_width+0.5), int(target_height+0.5));
+}
+
+void OnnxImgEnhance::convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim) {
+    // cell_size = 4 for lut dim 16, 8 for lut dim 64
+
+    int offset = lut_dim*lut_dim*lut_dim;
+    const float* r_ptr = lut_prt;
+    const float* g_ptr = lut_prt + offset;
+    const float* b_ptr = lut_prt + offset * 2;
+
+    for(int bx=0; bx < cell_size; bx++){
+        for(int by=0; by < cell_size; by++){
+            for(int g=0; g < lut_dim; g++){
+                for(int r=0; r < lut_dim; r++){
+                    auto b = bx + by * cell_size;
+                    auto x = r + bx * lut_dim;
+                    auto y = g + by * lut_dim;
+
+                    int b_offset = lut_dim * lut_dim;
+                    int g_offset = lut_dim;
+
+                    lut_mat.at<cv::Vec3f>(y, x)[2] = b_ptr[b * b_offset + g * g_offset + r];
+                    lut_mat.at<cv::Vec3f>(y, x)[1] = g_ptr[b * b_offset + g * g_offset + r];
+                    lut_mat.at<cv::Vec3f>(y, x)[0] = r_ptr[b * b_offset + g * g_offset + r];
+                }
+            }
+        }
+    }
 }

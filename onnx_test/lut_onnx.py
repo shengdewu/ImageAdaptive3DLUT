@@ -220,6 +220,20 @@ def onnx_run(down_factor, in_path, out_path, ort_session):
 
         lut = torch.from_numpy(outputs[0])
 
+        save_lut = np.zeros((64, 64, 3))
+        for x_cell in range(4):
+            for y_cell in range(4):
+                for g in range(16):
+                    for r in range(16):
+                        b = x_cell + y_cell * 4
+                        x = r + x_cell * 16
+                        y = g + y_cell * 16
+                        save_lut[y, x, 2] = lut[0, b, g, r]
+                        save_lut[y, x, 1] = lut[1, b, g, r]
+                        save_lut[y, x, 0] = lut[2, b, g, r]
+
+        cv2.imwrite('/mnt/sda1/enhance.test/img.lut12.mobile.dim16.onnx/test/lut.jpg', (save_lut*255).astype(np.uint8))
+
         real_a = torch.from_numpy(normalized(img_rgb).transpose((2, 0, 1))).unsqueeze(0)
         _, enhance_img = trilinear(lut, real_a)
 
@@ -231,5 +245,5 @@ def onnx_run(down_factor, in_path, out_path, ort_session):
             w[real_a < 0.5] = 0
         enhance_img = (1 - w) * enhance_img + w * real_a
 
-        save_image(torch.cat((real_a, enhance_img), -1), os.path.join(out_path, img_name), nrow=1, normalize=False)
+        save_image(enhance_img, os.path.join(out_path, img_name), nrow=1, normalize=False)
 
