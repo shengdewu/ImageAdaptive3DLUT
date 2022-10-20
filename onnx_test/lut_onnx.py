@@ -201,7 +201,11 @@ def onnx_run(down_factor, in_path, out_path, ort_session):
     trilinear = TrilinearInterpolationModel()
 
     for name in os.listdir(in_path):
-        img_name = '{}.jpg'.format(name[:name.rfind('.tif')])
+        if name.lower().endswith('tif'):
+            img_name = name.replace('tif', 'jpg')
+        else:
+            img_name = name
+
         if os.path.exists(os.path.join(out_path, img_name)):
             continue
         img_rgb = cv2.cvtColor(cv2.imread(os.path.join(in_path, name), -1), cv2.COLOR_BGR2RGB)
