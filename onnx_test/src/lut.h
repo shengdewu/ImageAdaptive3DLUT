@@ -10,6 +10,7 @@ class Lut
 public:
 	static cv::Mat trilinear(const cv::Mat &image, const cv::Mat &lut);
     static void trilinear_forward(const float* lut, const cv::Mat &image, cv::Mat &output, const int dim=16);
+    static void convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim);
 private:
 	/**
 	 * http://www.paulbourke.net/miscellaneous/interpolation/

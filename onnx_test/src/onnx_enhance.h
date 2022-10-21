@@ -11,7 +11,7 @@ class OnnxImgEnhance{
 
         ~OnnxImgEnhance();
 
-        cv::Mat run(const cv::Mat &img_rgb, size_t ref_size=256);
+        cv::Mat run(const cv::Mat &img_rgb, size_t ref_size=512, std::string lut_cache="", bool enable_post=true);
 
     private:
         void create_onnx_env();
@@ -19,10 +19,6 @@ class OnnxImgEnhance{
         void print_input_info(std::string flag);
 
         void transfor_data(const cv::Mat &mat);
-
-        cv::Size scale_longe_edge(cv::Size size, size_t ref_size);
-
-        void convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim);
 
     private:
         int _lut_dim;

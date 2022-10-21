@@ -27,7 +27,7 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
         return;
     }
 
-    std::string mnn_path = "/mnt/sda1/wokspace/ImageAdaptive3DLUT/onnx_test/lut.mnn";
+    std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16_f16.mnn";
     ImgEnhance img_enhance(mnn_path, 8);
 
     std::string split("#");
@@ -71,7 +71,7 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
             cv::Mat img_rgb;
             cv::cvtColor(img_bgr, img_rgb, cv::COLOR_BGR2RGB);
 
-            cv::Mat enhance_img = img_enhance.run(img_rgb);
+            cv::Mat enhance_img = img_enhance.run(img_rgb, 512);
 
             cv::Mat enhance_img_bgr;
             cv::cvtColor(enhance_img, enhance_img_bgr, cv::COLOR_RGB2BGR);
@@ -87,22 +87,30 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
 
 
 int main(int argc, char** argv){
-    // bat_test("/mnt/sda1/wokspace/ImageAdaptive3DLUT/dir/1.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000", "/mnt/sda1/enhance.test/lut_mnn");
+    // bat_test("/mnt/sda1/workspace/ImageAdaptive3DLUT/dir/error.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000", "/mnt/sda1/enhance.test/lut_mnn_16");
 
-    //std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.mnn";
+    std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.mnn";
     std::string onnx_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.onnx";
+    std::string out_path = "/mnt/sda1/workspace/ximg/test/cpp.mnn.512/";
 
     auto init_time = std::chrono::system_clock::now();
 
-//    ImgEnhance img_enhance(mnn_path, 8);
-    OnnxImgEnhance onnx_img_enhance(onnx_path, 8);
+//    OnnxImgEnhance img_enhance(onnx_path, 8);
+
+    ImgEnhance img_enhance(mnn_path, 8);
 
     std::vector<std::string> img_path;
     // img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif/儿童/01浅色实景/儿童SJ (31)/161082062385739907252.tif");
     // img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif/儿童/01浅色实景/儿童SJ (31)/16108206392879900290.tif");
-    img_path.push_back("/mnt/sda1/workspace/ximg/test/DSC_4678.jpg");
+//    img_path.push_back("/mnt/sda1/workspace/ximg/test/DSC_4678.jpg");
+    img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000/test/1.debug.raw.jpg");
+    img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000/test/2.debug.raw.jpg");
     
     for(size_t i=0; i < img_path.size(); i++){
+        size_t spos = img_path[i].rfind('/')+1;
+        size_t epos = img_path[i].find(".jpg");
+        std::string name = img_path[i].substr(spos, epos-spos)+".jpg";
+
         auto read_time = std::chrono::system_clock::now();
         cv::Mat img_bgr = cv::imread(img_path[i], cv::ImreadModes::IMREAD_COLOR);
         cv::Mat img_rgb;
@@ -114,8 +122,7 @@ int main(int argc, char** argv){
         // std::cout << min_val << "," << max_val << std::endl;
         // auto en_time = std::chrono::system_clock::now();
 
-//        cv::Mat enhance_img = img_enhance.run(img_rgb, 512);
-        cv::Mat enhance_img = onnx_img_enhance.run(img_rgb, 512);
+        cv::Mat enhance_img = img_enhance.run(img_rgb, 512, out_path + name + ".lut.jpg", true);
 
         cv::Mat enhance_img_bgr;
         cv::cvtColor(enhance_img, enhance_img_bgr, cv::COLOR_RGB2BGR);
@@ -134,7 +141,7 @@ int main(int argc, char** argv){
         // size_t spos = img_path[i].rfind('/')+1;
         // size_t epos = img_path[i].find(".tif");
         // cv::imwrite(img_path[i].substr(spos, epos-spos)+".jpg", concat);
-        cv::imwrite("/mnt/sda1/workspace/ximg/test/base/onnx64.jpg", enhance_img_bgr);
+        cv::imwrite(out_path + name, enhance_img_bgr);
     }
 
 }

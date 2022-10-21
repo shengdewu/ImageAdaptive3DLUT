@@ -136,3 +136,31 @@ void Lut::trilinear_forward(const float* lut, const cv::Mat &image, cv::Mat &out
                                  w011 * lut[id011 + shift * 2] + w111 * lut[id111 + shift * 2];
     }
 }
+
+void Lut::convert_lut(const float* lut_prt, cv::Mat &lut_mat, int cell_size, int lut_dim) {
+    // cell_size = 4 for lut dim 16, 8 for lut dim 64
+
+    int offset = lut_dim*lut_dim*lut_dim;
+    const float* r_ptr = lut_prt;
+    const float* g_ptr = lut_prt + offset;
+    const float* b_ptr = lut_prt + offset * 2;
+
+    for(int bx=0; bx < cell_size; bx++){
+        for(int by=0; by < cell_size; by++){
+            for(int g=0; g < lut_dim; g++){
+                for(int r=0; r < lut_dim; r++){
+                    auto b = bx + by * cell_size;
+                    auto x = r + bx * lut_dim;
+                    auto y = g + by * lut_dim;
+
+                    int b_offset = lut_dim * lut_dim;
+                    int g_offset = lut_dim;
+
+                    lut_mat.at<cv::Vec3f>(y, x)[2] = b_ptr[b * b_offset + g * g_offset + r];
+                    lut_mat.at<cv::Vec3f>(y, x)[1] = g_ptr[b * b_offset + g * g_offset + r];
+                    lut_mat.at<cv::Vec3f>(y, x)[0] = r_ptr[b * b_offset + g * g_offset + r];
+                }
+            }
+        }
+    }
+}
