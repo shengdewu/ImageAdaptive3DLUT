@@ -7,6 +7,7 @@ import logging
 from engine.checkpoint.functional import load_model_state_dict
 import torch.nn.functional as torch_func
 import torchvision.models.mobilenet
+import torchvision.transforms.functional as ttf
 
 
 __all__ = [
@@ -211,15 +212,30 @@ class MobileNet(torch.nn.Module):
     def __init__(self, cfg):
         super(MobileNet, self).__init__()
         self.backbone = torchvision.models.mobilenet_v3_small(num_classes=cfg.MODEL.LUT.SUPPLEMENT_NUMS + 1)
-        self.down_factor = cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+
+        self.rough_size = cfg.MODEL.CLASSIFIER.get('ROUGH_SIZE', None)
+
+        self.blur_size = cfg.MODEL.CLASSIFIER.get('BLUR_SIZE', None)
+
+        if self.rough_size is not None:
+            self.down_factor = 1
+        else:
+            self.down_factor = cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+
         assert self.down_factor % 2 == 0 or self.down_factor == 1, 'the {} must be divisible by 2 or equal 1'.format(self.down_factor)
         self.to(cfg.MODEL.DEVICE)
         return
 
     def forward(self, x):
         if self.down_factor > 1:
+            if self.blur_size is not None:
+                x = ttf.gaussian_blur(x, kernel_size=self.blur_size)
             return self.backbone(torch_func.interpolate(x, scale_factor=1/self.down_factor, mode='bilinear'))
         else:
+            if self.rough_size is not None:
+                x = ttf.resize(x, self.rough_size, interpolation=ttf.InterpolationMode.BILINEAR)
+            if self.blur_size is not None:
+                x = ttf.gaussian_blur(x, kernel_size=self.blur_size)
             return self.backbone(x)
 
     def init_normal_classifier(self):
