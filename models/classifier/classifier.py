@@ -233,7 +233,7 @@ class MobileNet(torch.nn.Module):
             return self.backbone(torch_func.interpolate(x, scale_factor=1/self.down_factor, mode='bilinear'))
         else:
             if self.rough_size is not None:
-                x = ttf.resize(x, self.rough_size, interpolation=ttf.InterpolationMode.BILINEAR)
+                x = ttf.resize(x, (self.rough_size, self.rough_size), interpolation=ttf.InterpolationMode.BILINEAR)
             if self.blur_size is not None:
                 x = ttf.gaussian_blur(x, kernel_size=self.blur_size)
             return self.backbone(x)
