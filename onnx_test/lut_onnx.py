@@ -194,7 +194,7 @@ def save_image(tensor, fp, unnormalizing_value=255, **kwargs):
     return
 
 
-def onnx_run(down_factor, in_path, out_path, ort_session):
+def onnx_run(in_path, out_path, ort_session, down_factor=1, ref_size=None):
 
     os.makedirs(out_path, exist_ok=True)
     cal_time = list()
@@ -211,12 +211,19 @@ def onnx_run(down_factor, in_path, out_path, ort_session):
         img_rgb = cv2.cvtColor(cv2.imread(os.path.join(in_path, name), -1), cv2.COLOR_BGR2RGB)
         img_input = normalized(img_rgb)
 
-        if down_factor > 1 and down_factor % 2 == 0:
+        if ref_size is not None:
             h, w, c = img_input.shape
-            h = (h // down_factor) * down_factor
-            w = (w // down_factor) * down_factor
-            img_rgb = img_rgb[:h, :w, :]
-            img_input = cv2.resize(img_input, (img_input.shape[1] // down_factor, img_input.shape[0] // down_factor), cv2.INTER_CUBIC)
+            scale = ref_size * 1.0 / max(h, w)
+            new_h = int(h * scale + 0.5)
+            new_w = int(w * scale + 0.5)
+            img_input = cv2.resize(img_input, (new_w, new_h), cv2.INTER_CUBIC)
+        else:
+            if down_factor > 1 and down_factor % 2 == 0:
+                h, w, c = img_input.shape
+                h = (h // down_factor) * down_factor
+                w = (w // down_factor) * down_factor
+                img_rgb = img_rgb[:h, :w, :]
+                img_input = cv2.resize(img_input, (img_input.shape[1] // down_factor, img_input.shape[0] // down_factor), cv2.INTER_CUBIC)
 
         stime = time.time()
         outputs = ort_session.run(None, {'input_img': img_input.transpose((2, 0, 1))[np.newaxis, :]})
@@ -224,19 +231,19 @@ def onnx_run(down_factor, in_path, out_path, ort_session):
 
         lut = torch.from_numpy(outputs[0])
 
-        save_lut = np.zeros((64, 64, 3))
-        for x_cell in range(4):
-            for y_cell in range(4):
-                for g in range(16):
-                    for r in range(16):
-                        b = x_cell + y_cell * 4
-                        x = r + x_cell * 16
-                        y = g + y_cell * 16
-                        save_lut[y, x, 2] = lut[0, b, g, r]
-                        save_lut[y, x, 1] = lut[1, b, g, r]
-                        save_lut[y, x, 0] = lut[2, b, g, r]
+        # save_lut = np.zeros((64, 64, 3))
+        # for x_cell in range(4):
+        #     for y_cell in range(4):
+        #         for g in range(16):
+        #             for r in range(16):
+        #                 b = x_cell + y_cell * 4
+        #                 x = r + x_cell * 16
+        #                 y = g + y_cell * 16
+        #                 save_lut[y, x, 2] = lut[0, b, g, r]
+        #                 save_lut[y, x, 1] = lut[1, b, g, r]
+        #                 save_lut[y, x, 0] = lut[2, b, g, r]
 
-        cv2.imwrite('/mnt/sda1/enhance.test/img.lut12.mobile.dim16.onnx/test/lut.jpg', (save_lut*255).astype(np.uint8))
+        # cv2.imwrite(os.path.join(out_path, '{}.jpg'.format(img_name.replace('jpg', 'lut'))), (save_lut*255).astype(np.uint8))
 
         real_a = torch.from_numpy(normalized(img_rgb).transpose((2, 0, 1))).unsqueeze(0)
         _, enhance_img = trilinear(lut, real_a)

@@ -90,10 +90,12 @@ class AdaptiveBaseModel:
         models['cls'] = get_model_state_dict(self.classifier)
         return models
 
-    def load_state_dict(self, state_dict: dict):
-        load_model_state_dict(self.lut0, state_dict['lut'][0])
-        self.lut1.load_state_dict(state_dict['lut'], offset=1)
-        load_model_state_dict(self.classifier, state_dict['cls'])
+    def load_state_dict(self, state_dict: dict, log_name=None):
+        log_name = __name__ if log_name is None else log_name
+
+        load_model_state_dict(self.lut0, state_dict['lut'][0], log_name=log_name)
+        self.lut1.load_state_dict(state_dict['lut'], offset=1, log_name=log_name)
+        load_model_state_dict(self.classifier, state_dict['cls'], log_name=log_name)
         return
 
     def get_addition_state_dict(self):

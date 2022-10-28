@@ -161,3 +161,31 @@ class CompareNoIn(CompareBase):
             concat[:h, start_w:start_w+w//2, :] = compare_imgs[i][:, w//2:, :]
             start_w += w//2
         return concat
+
+
+class Compare(CompareBase):
+    def __init__(self):
+        super(Compare, self).__init__()
+
+    def execute(self, shapes, base_img, compare_imgs):
+        '''
+        基础输入图片时 input|gt, 其他是 input|gt
+        :param shapes:
+        :param base_img:
+        :param compare_imgs:
+        :return: input|gt|input|gt|
+        '''
+        h, w, c = base_img.shape
+        ch = [shape[0] for shape in shapes]
+        cw = [shape[1] for shape in shapes]
+        ch = max(ch)
+        cw = sum(cw)
+        concat = np.zeros(shape=(max(ch, h), w + cw, c), dtype=base_img.dtype)
+        concat[:h, :w, :] = base_img
+        start_w = w
+        for i in range(len(compare_imgs)):
+            h, w, c = shapes[i]
+            assert shapes[i] == compare_imgs[i].shape
+            concat[:h, start_w:start_w+w, :] = compare_imgs[i]
+            start_w += w
+        return concat

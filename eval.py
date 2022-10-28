@@ -8,6 +8,9 @@ from fvcore.common.config import CfgNode
 import re
 import cv2
 import numpy as np
+from engine.log.logger import setup_logger
+import engine.comm as comm
+import logging
 
 
 def merge_config():
@@ -21,29 +24,41 @@ def merge_config():
     dg = pattern.search(weights)
     model_path_root = weights[: dg.span()[0]]
 
+    setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=cfg.OUTPUT_LOG_NAME)
+
     train_config = os.path.join(model_path_root, 'config.yaml')
     if os.path.exists(train_config):
-        print('use {}'.format(train_config))
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('use {}'.format(train_config))
 
         f = open(train_config, mode='r')
         hcfg = CfgNode().load_cfg(f)
         f.close()
 
-        VGG_PATH = cfg.MODEL.VGG.VGG_PATH
-        WEIGHTS = cfg.MODEL.WEIGHTS
-        PRETRAINED_PATH = cfg.MODEL.CLASSIFIER.PRETRAINED_PATH
-        DOWN_FACTOR = cfg.MODEL.CLASSIFIER.DOWN_FACTOR
-        device = cfg.MODEL.DEVICE
+        vgg_path = cfg.MODEL.get('VGG', None)
+        if vgg_path is not None:
+            vgg_path = vgg_path.get('VGG_PATH', None)
+        weight_path = cfg.MODEL.WEIGHTS
+        down_factor = cfg.MODEL.get('CLASSIFIER', None)
+        if down_factor is not None:
+            down_factor = down_factor.get('DOWN_FACTOR', 1)
 
+        device = cfg.MODEL.DEVICE
         cfg.SOLVER = hcfg.SOLVER
         cfg.MODEL = hcfg.MODEL
 
-        cfg.MODEL.VGG.VGG_PATH = VGG_PATH
-        cfg.MODEL.WEIGHTS = WEIGHTS
-        cfg.MODEL.CLASSIFIER.PRETRAINED_PATH = PRETRAINED_PATH
-        cfg.MODEL.CLASSIFIER.DOWN_FACTOR = DOWN_FACTOR
+        if vgg_path is not None:
+            cfg.MODEL.VGG.VGG_PATH = vgg_path
+        cfg.MODEL.WEIGHTS = weight_path
+        if down_factor is not None:
+            cfg.MODEL.CLASSIFIER.DOWN_FACTOR = down_factor
         cfg.MODEL.DEVICE = device
     cfg.freeze()
+
+    path = os.path.join(cfg.OUTPUT_DIR, "config.yaml")
+
+    with open(path, "w") as f:
+        f.write(cfg.dump(allow_unicode=True))
+
     return cfg
 
 

@@ -75,11 +75,11 @@ class Generator_3DLUT_supplement:
             state_dict[i+offset] = get_model_state_dict(lut)
         return state_dict
 
-    def load_state_dict(self, state_dict:dict, offset=1):
+    def load_state_dict(self, state_dict:dict, offset=1, log_name=''):
         total_lut = len([key for key in state_dict.keys() if key >= offset])
         assert total_lut == len(self.generator_3d_lut), 'Generator_3DLUT_SUPPLEMENT owned number {} is not equal lut number {} that in the state_dict'.format(len(self.generator_3d_lut), total_lut)
         for i, lut in self.generator_3d_lut.items():
-            load_model_state_dict(lut, state_dict[i+offset])
+            load_model_state_dict(lut, state_dict[i+offset], log_name=log_name)
         return
 
     def enable_parallel(self):

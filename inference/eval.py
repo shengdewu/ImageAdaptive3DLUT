@@ -86,7 +86,7 @@ class Inference:
     def resume_or_load(self):
         model_state_dict, addition_state_dict = self.checkpointer.resume_or_load(self.model_path, resume=False)
         addition_state_dict.pop("iteration")
-        self.model.load_state_dict(model_state_dict)
+        self.model.load_state_dict(model_state_dict, log_name=__name__)
         self.model.load_addition_state_dict(addition_state_dict)
         logging.getLogger(__name__).info('load model from {}'.format(self.model_path))
         return
