@@ -91,7 +91,7 @@ int main(int argc, char** argv){
 
     std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.mnn";
     std::string onnx_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.onnx";
-    std::string out_path = "/mnt/sda1/workspace/ximg/test/cpp.mnn.512/";
+    std::string out_path = "/mnt/sda1/enhance.test/img.lut12.mobile.dim16/test.lut/";
 
     auto init_time = std::chrono::system_clock::now();
 
@@ -109,7 +109,7 @@ int main(int argc, char** argv){
     for(size_t i=0; i < img_path.size(); i++){
         size_t spos = img_path[i].rfind('/')+1;
         size_t epos = img_path[i].find(".jpg");
-        std::string name = img_path[i].substr(spos, epos-spos)+".jpg";
+        std::string name = img_path[i].substr(spos, epos-spos);
 
         auto read_time = std::chrono::system_clock::now();
         cv::Mat img_bgr = cv::imread(img_path[i], cv::ImreadModes::IMREAD_COLOR);
@@ -122,7 +122,7 @@ int main(int argc, char** argv){
         // std::cout << min_val << "," << max_val << std::endl;
         // auto en_time = std::chrono::system_clock::now();
 
-        cv::Mat enhance_img = img_enhance.run(img_rgb, 512, out_path + name + ".lut.jpg", true);
+        cv::Mat enhance_img = img_enhance.run(img_rgb, 512, out_path + name + ".lut.jpg", false);
 
         cv::Mat enhance_img_bgr;
         cv::cvtColor(enhance_img, enhance_img_bgr, cv::COLOR_RGB2BGR);
@@ -141,7 +141,7 @@ int main(int argc, char** argv){
         // size_t spos = img_path[i].rfind('/')+1;
         // size_t epos = img_path[i].find(".tif");
         // cv::imwrite(img_path[i].substr(spos, epos-spos)+".jpg", concat);
-        cv::imwrite(out_path + name, enhance_img_bgr);
+        cv::imwrite(out_path + name + ".jpg", enhance_img_bgr);
     }
 
 }
