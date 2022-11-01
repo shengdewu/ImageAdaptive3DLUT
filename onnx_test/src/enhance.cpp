@@ -96,7 +96,8 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
 
     std::cout << "start apply lut" << std::endl;
 
-    cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
+     cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
+//    cv::Mat img_enhance_normal = Lut::trilinear_forward(f_data, img_rgb_normal);
 
     if(enable_post){
         std::cout << "post lut" << std::endl;

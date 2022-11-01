@@ -91,7 +91,7 @@ int main(int argc, char** argv){
 
     std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.mnn";
     std::string onnx_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.onnx";
-    std::string out_path = "/mnt/sda1/enhance.test/img.lut12.mobile.dim16/test.lut/";
+    std::string out_path = "/mnt/sda1/enhance.test/img.lut12.mobile.dim16/";
 
     auto init_time = std::chrono::system_clock::now();
 
