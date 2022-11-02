@@ -258,3 +258,87 @@ def onnx_run(in_path, out_path, ort_session, down_factor=1, ref_size=None):
 
         save_image(enhance_img, os.path.join(out_path, img_name), nrow=1, normalize=False)
 
+
+class OnnxSession:
+    def __init__(self, onnx_name):
+        model = onnx.load(onnx_name)
+        onnx.checker.check_model(model)
+        print(onnx.helper.printable_graph(model.graph))
+
+        self.ort_session = onnxruntime.InferenceSession(onnx_name,
+                                                        providers=['CPUExecutionProvider', 'CUDAExecutionProvider'])
+        return
+
+    def loop(self, data_cfg, skip=True, suppress_size=10):
+        ref_size = data_cfg.MODEL.CLASSIFIER.get('ROUGH_SIZE', 512)
+
+        down_factor = data_cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+        in_path = data_cfg.DATALOADER.DATA_PATH
+        out_path = data_cfg.OUTPUT_DIR
+
+        os.makedirs(out_path, exist_ok=True)
+        cal_time = list()
+        trilinear = TrilinearInterpolationModel()
+
+        for name in os.listdir(in_path):
+            if name.lower().endswith('tif'):
+                img_name = name.replace('tif', 'jpg')
+            else:
+                img_name = name
+
+            if skip and os.path.exists(os.path.join(out_path, img_name)):
+                continue
+            img_rgb = cv2.cvtColor(cv2.imread(os.path.join(in_path, name), -1), cv2.COLOR_BGR2RGB)
+            img_input = normalized(img_rgb)
+
+            if ref_size is not None:
+                h, w, c = img_input.shape
+                scale = ref_size * 1.0 / max(h, w)
+                new_h = int(h * scale + 0.5)
+                new_w = int(w * scale + 0.5)
+                img_input = cv2.resize(img_input, (new_w, new_h), cv2.INTER_CUBIC)
+            else:
+                if down_factor > 1 and down_factor % 2 == 0:
+                    h, w, c = img_input.shape
+                    h = (h // down_factor) * down_factor
+                    w = (w // down_factor) * down_factor
+                    img_rgb = img_rgb[:h, :w, :]
+                    img_input = cv2.resize(img_input,
+                                           (img_input.shape[1] // down_factor, img_input.shape[0] // down_factor),
+                                           cv2.INTER_CUBIC)
+
+            stime = time.time()
+            outputs = self.ort_session.run(None, {'input_img': img_input.transpose((2, 0, 1))[np.newaxis, :]})
+            cal_time.append(time.time() - stime)
+
+            lut = torch.from_numpy(outputs[0])
+
+            # save_lut = np.zeros((64, 64, 3))
+            # for x_cell in range(4):
+            #     for y_cell in range(4):
+            #         for g in range(16):
+            #             for r in range(16):
+            #                 b = x_cell + y_cell * 4
+            #                 x = r + x_cell * 16
+            #                 y = g + y_cell * 16
+            #                 save_lut[y, x, 2] = lut[0, b, g, r]
+            #                 save_lut[y, x, 1] = lut[1, b, g, r]
+            #                 save_lut[y, x, 0] = lut[2, b, g, r]
+
+            # cv2.imwrite(os.path.join(out_path, '{}.jpg'.format(img_name.replace('jpg', 'lut'))), (save_lut*255).astype(np.uint8))
+
+            real_a = torch.from_numpy(normalized(img_rgb).transpose((2, 0, 1))).unsqueeze(0)
+            _, enhance_img = trilinear(lut, real_a)
+
+            if suppress_size > 0:
+                lut_gain = torch.mean(enhance_img[:, :, ::suppress_size, ::suppress_size]) / torch.mean(real_a[:, :, ::suppress_size, ::suppress_size])
+                w = 32 * ((real_a - 0.5) ** 6)
+                if lut_gain > 1:
+                    w[real_a > 0.5] = 0
+                else:
+                    w[real_a < 0.5] = 0
+                enhance_img = (1 - w) * enhance_img + w * real_a
+
+            save_image(enhance_img, os.path.join(out_path, img_name), nrow=1, normalize=False)
+        return
+

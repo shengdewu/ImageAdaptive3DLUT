@@ -1,0 +1,20 @@
+MODEL:
+  WEIGHTS: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16.512/AdaptivePerceptualPairedModel_final.pth
+  VGG:
+    VGG_PATH: /mnt/sdb/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
+#    VGG_LAYER: 14
+  DEVICE: cpu
+  CLASSIFIER:
+    DOWN_FACTOR: 4
+
+DATALOADER:
+  NUM_WORKERS: 1
+  DATA_PATH: /mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000
+  DATASET: ImageDatasetTest
+  XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
+  XT_TRAIN_LABEL_TXT: "no_aug.train_label.txt"
+  XT_TEST_TXT: "no_aug.test.txt"
+  XT_TEST_MAX_NUMS: -1
+
+OUTPUT_LOG_NAME: "image.lut"
+OUTPUT_DIR: /mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.512.test

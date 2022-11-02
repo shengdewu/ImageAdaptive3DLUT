@@ -2,8 +2,8 @@ SOLVER:
   BASE_LR: 0.0002
   WARMUP_ITERS: 0
   GAMMA: 0.1
-  MAX_ITER: 250000
-  STEPS: (200000, 210000)
+  MAX_ITER: 200000
+  STEPS: (15000, 19000)
   CHECKPOINT_PERIOD: 10000
   MAX_KEEP: 10
   IMS_PER_BATCH: 6
@@ -33,23 +33,25 @@ MODEL:
   DEVICE: cuda
   ARCH: AdaptivePerceptualPairedModel
   LUT:
-    SUPPLEMENT_NUMS: 12
-    DIMS: 64
+    SUPPLEMENT_NUMS: 11
+    DIMS: 16
     ZERO_LUT: True
   CLASSIFIER:
 #    PRETRAINED_PATH: /mnt/sda2/pretrain.model/resnet/resnet50-0676ba61.pth
-    ARCH: Classifier
+    ARCH: MobileNet
+#    ROUGH_SIZE: 512
+#    BLUR_SIZE: 3
 #    RESNET_ARCH: resnet50
 #    RESNET_NORMAL: InstanceNorm2d
 
 DATALOADER:
-  NUM_WORKERS: 1
+  NUM_WORKERS: 10
   DATA_PATH: /home/shengdewu/data/xt.image.enhancement.540
   DATASET: ImageDataSetXinTu
   XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
   XT_TRAIN_LABEL_TXT: "no_aug.train_label.txt"
   XT_TEST_TXT: "no_aug.test.txt"
-  XT_TEST_MAX_NUMS: 60
+  XT_TEST_MAX_NUMS: 30
 
 INPUT:
   INPUT_OVER_EXPOSURE:
@@ -60,9 +62,9 @@ INPUT:
   COLOR_JITTER:
     PROB: 0.0
     BRIGHTNESS:
-      ENABLE: false
+      ENABLE: true
       MIN: 0.7
-      MAX: 1.05
+      MAX: 1.15
     SATURATION:
       ENABLE: false
       MIN: 0.7
@@ -87,4 +89,4 @@ INPUT:
     SATURATION: 1.0
 
 OUTPUT_LOG_NAME: "image.lut"
-OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/image.lut.samll
+OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16
