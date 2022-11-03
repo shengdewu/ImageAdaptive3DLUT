@@ -4,6 +4,7 @@ import tqdm
 from inference.eval import Inference
 from dataloader.build import build_dataset
 import logging
+from .eval import Resize, Interpolate
 
 
 class InferenceNoneGt(Inference):
@@ -11,14 +12,23 @@ class InferenceNoneGt(Inference):
         super(InferenceNoneGt, self).__init__(cfg, tif)
         return
 
-    def loop(self, cfg, skip=False, special_name=None, suppress_size=0):
+    def loop(self, cfg, skip=False, special_name=None, suppress_size=0, down_factor=1, rough_size=None, is_padding=True):
         if special_name is not None:
             assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
+
+        if rough_size is not None:
+            resize_fn = Resize(rough_size, is_padding=is_padding)
+            flag = '{}-resize{}{}'.format(self.flag, rough_size, 'p' if is_padding else '')
+        else:
+            resize_fn = Interpolate(down_factor)
+            flag = '{}-factor{}'.format(self.flag, down_factor)
+
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info(resize_fn)
 
         output = cfg.OUTPUT_DIR
         os.makedirs(output, exist_ok=True)
         test_dataset = build_dataset(cfg, model='test')
-        logging.getLogger(__name__).info('create dataset {}, load {} test data'.format(cfg.DATALOADER.DATASET, len(test_dataset)))
+        logging.getLogger(cfg.OUTPUT_LOG_NAME).info('create dataset {}, load {} test data'.format(cfg.DATALOADER.DATASET, len(test_dataset)))
 
         img_format = 'jpg' if self.unnormalizing_value == 255 else 'tif'
         skin_name = list()
@@ -39,8 +49,8 @@ class InferenceNoneGt(Inference):
             # if input_name in skin_name:
             #     continue
             real_A = data["A_input"].to(self.device).unsqueeze(0)
-
-            combine_lut = self.model.generate_lut(real_A)
+            cls_img = resize_fn(data["A_input"].to(self.device))
+            combine_lut = self.model.generate_lut(cls_img.unsqueeze(0))
             _, fake_B = self.triliear(combine_lut, real_A)
 
             # 对插值后的结果添加如下处理代码：
@@ -58,7 +68,7 @@ class InferenceNoneGt(Inference):
 
             img_sample = torch.cat((real_A, fake_B), -1)
 
-            Inference.save_image(img_sample, '{}/{}'.format(output, input_name), flag='{}-{}'.format(self.flag, suppress_size > 0), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
+            Inference.save_image(img_sample, '{}/{}'.format(output, input_name), flag='{}-{}'.format(flag, suppress_size > 0), unnormalizing_value=self.unnormalizing_value, nrow=1, normalize=False)
         return
 
 

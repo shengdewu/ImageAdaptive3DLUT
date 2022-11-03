@@ -269,10 +269,7 @@ class OnnxSession:
                                                         providers=['CPUExecutionProvider', 'CUDAExecutionProvider'])
         return
 
-    def loop(self, data_cfg, skip=True, suppress_size=10):
-        ref_size = data_cfg.MODEL.CLASSIFIER.get('ROUGH_SIZE', 512)
-
-        down_factor = data_cfg.MODEL.CLASSIFIER.get('DOWN_FACTOR', 1)
+    def loop(self, data_cfg, skip=True, suppress_size=10, rough_size=None, down_factor=1):
         in_path = data_cfg.DATALOADER.DATA_PATH
         out_path = data_cfg.OUTPUT_DIR
 
@@ -291,9 +288,9 @@ class OnnxSession:
             img_rgb = cv2.cvtColor(cv2.imread(os.path.join(in_path, name), -1), cv2.COLOR_BGR2RGB)
             img_input = normalized(img_rgb)
 
-            if ref_size is not None:
+            if rough_size is not None:
                 h, w, c = img_input.shape
-                scale = ref_size * 1.0 / max(h, w)
+                scale = rough_size * 1.0 / max(h, w)
                 new_h = int(h * scale + 0.5)
                 new_w = int(w * scale + 0.5)
                 img_input = cv2.resize(img_input, (new_w, new_h), cv2.INTER_CUBIC)

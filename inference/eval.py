@@ -5,7 +5,8 @@ from models.build import build_model
 import engine.comm as comm
 from engine.log.logger import setup_logger
 import torch
-from dataloader.dataloader import DataLoader
+import torchvision.transforms.functional as ttf
+import torch.nn.functional as tnf
 import torchvision
 import cv2
 import numpy as np
@@ -13,6 +14,52 @@ from dataloader.build import build_dataset
 from models.lut.lut_abc import transfer3d_2d
 import os
 import tqdm
+
+
+class Resize:
+    def __init__(self, target_size, is_padding=False):
+        self.target_size = target_size
+        self.is_padding = is_padding
+        return
+
+    def pad(self, data):
+        c, h, w = data.shape
+        h_offset = self.target_size - h
+        w_offset = self.target_size - w
+        left = w_offset // 2
+        right = w_offset - left
+        top = h_offset // 2
+        bottom = h_offset - top
+        return ttf.pad(data, padding=[left, top, right, bottom], fill=0)
+
+    def __call__(self, img: torch.Tensor):
+        c, h, w = img.shape
+        scale = self.target_size * 1.0 / max(h, w)
+        new_h, new_w = int(h * scale + 0.5), int(w * scale + 0.5)
+        img = ttf.resize(img, size=[new_h, new_w])
+
+        if self.is_padding and min(new_h, new_w) < self.target_size:
+            img = self.pad(img)
+        return img
+
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '('
+        format_string += 'target_size={0},'.format(self.target_size)
+        format_string += 'is_padding={0})'.format(self.is_padding)
+        return format_string
+
+
+class Interpolate:
+    def __init__(self, factor=1):
+        self.factor = factor
+
+    def __call__(self, img):
+        return tnf.interpolate(img, scale_factor=1./self.factor, mode='bilinear')
+
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '('
+        format_string += 'factor={0})'.format(self.factor)
+        return format_string
 
 
 class Inference:
@@ -37,9 +84,16 @@ class Inference:
         self.flag = self.model_path.split('/')[-2]
         return
 
-    def loop(self, cfg, skip=False, special_name=None):
+    def loop(self, cfg, skip=False, special_name=None, down_factor=1, ref_size=None):
         if special_name is not None:
             assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
+
+        if ref_size is not None:
+            resize_fn = Resize(ref_size)
+        else:
+            resize_fn = Interpolate(down_factor)
+
+        print(resize_fn)
 
         output = cfg.OUTPUT_DIR
         os.makedirs(output, exist_ok=True)
@@ -57,8 +111,8 @@ class Inference:
                 continue
 
             real_A = data["A_input"].to(self.device).unsqueeze(0)
-
-            combine_lut = self.model.generate_lut(real_A)
+            cls_img = resize_fn(data["A_input"].to(self.device))
+            combine_lut = self.model.generate_lut(cls_img)
             _, fake_B = self.triliear(combine_lut, real_A)
 
             if 'A_exptC' in data.keys():

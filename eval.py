@@ -27,6 +27,8 @@ def merge_config():
     setup_logger(cfg.OUTPUT_DIR, comm.get_rank(), name=cfg.OUTPUT_LOG_NAME)
 
     train_config = os.path.join(model_path_root, 'config.yaml')
+    rough_size = None
+    down_factor = 1
     if os.path.exists(train_config):
         logging.getLogger(cfg.OUTPUT_LOG_NAME).info('use {}'.format(train_config))
 
@@ -38,19 +40,20 @@ def merge_config():
         if vgg_path is not None:
             vgg_path = vgg_path.get('VGG_PATH', None)
         weight_path = cfg.MODEL.WEIGHTS
-        down_factor = cfg.MODEL.get('CLASSIFIER', None)
-        if down_factor is not None:
-            down_factor = down_factor.get('DOWN_FACTOR', 1)
+        classifier = cfg.MODEL.get('CLASSIFIER', None)
+        if classifier is not None:
+            rough_size = classifier.get('ROUGH_SIZE', None)
+            if rough_size is None:
+                down_factor = classifier.get('DOWN_FACTOR', 1)
 
         device = cfg.MODEL.DEVICE
         cfg.SOLVER = hcfg.SOLVER
         cfg.MODEL = hcfg.MODEL
-
+        cfg.MODEL.CLASSIFIER.ROUGH_SIZE = None
+        cfg.MODEL.CLASSIFIER.DOWN_FACTOR = 1
         if vgg_path is not None:
             cfg.MODEL.VGG.VGG_PATH = vgg_path
         cfg.MODEL.WEIGHTS = weight_path
-        if down_factor is not None:
-            cfg.MODEL.CLASSIFIER.DOWN_FACTOR = down_factor
         cfg.MODEL.DEVICE = device
     cfg.freeze()
 
@@ -59,7 +62,7 @@ def merge_config():
     with open(path, "w") as f:
         f.write(cfg.dump(allow_unicode=True))
 
-    return cfg
+    return cfg, rough_size, down_factor
 
 
 def inference(cfg, special_name=None):

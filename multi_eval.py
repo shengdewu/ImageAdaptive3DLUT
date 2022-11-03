@@ -9,7 +9,7 @@ import os
 
 
 def inference(dir_names, onnx_path='', compare_in=None, compare_out=None):
-    cfg = merge_config()
+    cfg, rough_size, down_factor = merge_config()
     cfg.defrost()
 
     if onnx_path != '':
@@ -36,9 +36,9 @@ def inference(dir_names, onnx_path='', compare_in=None, compare_out=None):
         out_path = os.path.join(out_root, dir_name)
         data_cfg.OUTPUT_DIR = out_path
         data_cfg.DATALOADER.DATA_PATH = os.path.join(data_path, dir_name)
-        print('enhance {}'.format(data_cfg.DATALOADER.DATA_PATH))
+        print('enhance {} by resize/factor {}/{}'.format(data_cfg.DATALOADER.DATA_PATH, rough_size, down_factor))
 
-        session.loop(data_cfg, skip=True, suppress_size=10)
+        session.loop(data_cfg, skip=True, suppress_size=10, rough_size=rough_size, down_factor=down_factor)
 
         if compare_in is not None:
             compare_paths = [os.path.join(compare_path, dir_name) for compare_path in compare_in]
@@ -53,10 +53,17 @@ if __name__ == '__main__':
     dir_names = [line.strip('\n').split('#') for line in rhd.readlines()]
     rhd.close()
 
-    compare_paths = ['/mnt/sdb/data.set/xintu.data/转档测评/线上样本',
+    compare_paths = [
                      '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16',
-                     '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.512',
-                     '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.512.3']
+                     '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.cls512',
+                     # '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.resize512p',
+                     '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.cls540',
+                     # '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.resize540p',
+                     '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.cls608',
+                     # '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.resize608p'
+                     '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.cls750',
+                     # '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.resize750p'
+                    ]
     onnx_path = '/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/onnx_test/lut16.onnx'
-    compare_out = '/mnt/sda1/valid.output/enhance.test/compare-base-dim16-dim16.512-dim16.512.3'
-    inference(dir_names, onnx_path, compare_paths, compare_out)
+    compare_out = '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.size'
+    inference(dir_names, '', compare_paths, compare_out)
