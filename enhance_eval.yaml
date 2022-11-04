@@ -1,11 +1,12 @@
 MODEL:
-  WEIGHTS: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16.512/AdaptivePerceptualPairedModel_final.pth
+  WEIGHTS: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16/AdaptivePerceptualPairedModel_final.pth
   VGG:
     VGG_PATH: /mnt/sdb/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
 #    VGG_LAYER: 14
   DEVICE: cpu
   CLASSIFIER:
     DOWN_FACTOR: 4
+    ROUGH_SIZE: 540
 
 DATALOADER:
   NUM_WORKERS: 1
@@ -17,4 +18,4 @@ DATALOADER:
   XT_TEST_MAX_NUMS: -1
 
 OUTPUT_LOG_NAME: "image.lut"
-OUTPUT_DIR: /mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16.512.test
+OUTPUT_DIR: /mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16
