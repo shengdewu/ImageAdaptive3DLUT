@@ -40,6 +40,15 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
 
     cv::Mat in_img;
     cv::resize(img_rgb_normal, in_img, target_size, 0, 0, cv::INTER_AREA);
+//    int h_offset = ref_size - target_size.height;
+//    int w_offset = ref_size - target_size.width;
+//    int top = h_offset / 2;
+//    int bottom = h_offset - top;
+//    int left = w_offset / 2;
+//    int right = w_offset - left;
+//    cv::Mat in_img;
+//    cv::copyMakeBorder(in_img_tmp, in_img, top, bottom, left, right, cv::BorderTypes::BORDER_CONSTANT);
+
     cv::Mat nchw_img = cv::dnn::blobFromImage(in_img, 1.0, in_img.size(), cv::Scalar(), false);
     std::cout << "input_img_bgr_normal: "<< img_rgb_normal.rows << "," << img_rgb_normal.cols << "," << img_rgb_normal.channels() << std::endl;
     std::cout << "in_img: " << in_img.rows << "," << in_img.cols << "," << in_img.channels() << std::endl;

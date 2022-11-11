@@ -54,6 +54,8 @@ class Interpolate:
         self.factor = factor
 
     def __call__(self, img):
+        if self.factor <= 1:
+            return img
         return tnf.interpolate(img, scale_factor=1./self.factor, mode='bilinear')
 
     def __repr__(self):
@@ -156,7 +158,7 @@ class Inference:
         if flag != '':
             ndarr = np.ascontiguousarray(ndarr)
             h, w, c = ndarr.shape
-            cv2.putText(ndarr, '{}'.format(flag), (w // 2 + int(w * 0.01), int(h * 0.02)), cv2.FONT_HERSHEY_PLAIN, 4, [0, 0, 255], thickness=2)
+            cv2.putText(ndarr, '{}'.format(flag), (w // 2 + int(w * 0.01), int(h * 0.03)), cv2.FONT_HERSHEY_PLAIN, 2, [0, 0, 255], thickness=1)
         cv2.imwrite(fp, ndarr)
         return
 
