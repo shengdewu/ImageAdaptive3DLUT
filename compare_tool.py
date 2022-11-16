@@ -8,7 +8,7 @@ class CompareBase:
     def __init__(self):
         return
 
-    def compare(self, base_path, compare_paths, out_path, skip=False, special_name=None):
+    def compare(self, base_path, compare_paths, out_path, skip=False, special_name=None, img_format='jpg'):
         if base_path != '' and not os.path.exists(base_path):
             print('the compare base path {} not exists'.format(base_path))
             return
@@ -30,7 +30,7 @@ class CompareBase:
             base_path = compare_paths[0]
             compare_paths = compare_paths[1:]
 
-        base_names = [name for name in os.listdir(base_path) if name.lower().endswith('.jpg')]
+        base_names = [name for name in os.listdir(base_path) if name.lower().endswith(img_format)]
         for name in tqdm.tqdm(base_names):
             if special_name is not None and name not in special_name:
                 continue
