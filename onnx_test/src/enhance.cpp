@@ -88,25 +88,25 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
     assert(output_shape[1] == _lut_dim);
     const float *f_data = host_tensor.host<float>();
 
-    int lut_size = 64; // 512 for lut dim = 64, 64 for lut dim = 16
-    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(lut_size, lut_size), CV_32FC3);
-
-    std::cout << "start convert lut" << std::endl;
-    // 4 for lut dim 16, 8 for lut dim 64
-    Lut::convert_lut(f_data, lut_mat, 4, 16);
-
-    if(!lut_cache.empty()){
-        cv::Mat ulut = lut_mat * 255;
-        ulut.convertTo(ulut, CV_8UC3);
-        cv::Mat lut_bgr;
-        cv::cvtColor(ulut, lut_bgr, cv::COLOR_RGB2BGR);
-        cv::imwrite(lut_cache, lut_bgr);
-    }
-
-    std::cout << "start apply lut" << std::endl;
-
-     cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
-//    cv::Mat img_enhance_normal = Lut::trilinear_forward(f_data, img_rgb_normal);
+//    int lut_size = 64; // 512 for lut dim = 64, 64 for lut dim = 16
+//    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(lut_size, lut_size), CV_32FC3);
+//
+//    std::cout << "start convert lut" << std::endl;
+//    // 4 for lut dim 16, 8 for lut dim 64
+//    Lut::convert_lut(f_data, lut_mat, 4, 16);
+//
+//    if(!lut_cache.empty()){
+//        cv::Mat ulut = lut_mat * 255;
+//        ulut.convertTo(ulut, CV_8UC3);
+//        cv::Mat lut_bgr;
+//        cv::cvtColor(ulut, lut_bgr, cv::COLOR_RGB2BGR);
+//        cv::imwrite(lut_cache, lut_bgr);
+//    }
+//
+//    std::cout << "start apply lut" << std::endl;
+//
+//     cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
+     cv::Mat img_enhance_normal = Lut::trilinear_forward(f_data, img_rgb_normal);
 
     if(enable_post){
         std::cout << "post lut" << std::endl;

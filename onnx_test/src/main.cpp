@@ -27,7 +27,7 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
         return;
     }
 
-    std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16_f16.mnn";
+    std::string mnn_path = "/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/onnx_test/lut.mnn";
     ImgEnhance img_enhance(mnn_path, 8);
 
     std::string split("#");
@@ -87,11 +87,11 @@ void bat_test(std::string file_list_txt, std::string root_path, std::string out_
 
 
 int main(int argc, char** argv){
-    // bat_test("/mnt/sda1/workspace/ImageAdaptive3DLUT/dir/error.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000", "/mnt/sda1/enhance.test/lut_mnn_16");
+    // bat_test("/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/dir/error.txt", "/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000", "/mnt/sda1/valid.output/enhance.test/lut_mnn_quan");
 
-    std::string mnn_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.mnn";
-    std::string onnx_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut16.onnx";
-    std::string out_path = "/mnt/sda1/enhance.test/img.lut12.mobile.dim16/";
+    std::string mnn_path = "/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/lut.mnn";
+//    std::string onnx_path = "/mnt/sda1/workspace/ImageAdaptive3DLUT/onnx_test/lut.onnx";
+    std::string out_path = "/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/test.out/";
 
     auto init_time = std::chrono::system_clock::now();
 
@@ -105,6 +105,8 @@ int main(int argc, char** argv){
 //    img_path.push_back("/mnt/sda1/workspace/ximg/test/DSC_4678.jpg");
     img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000/test/1.debug.raw.jpg");
     img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000/test/2.debug.raw.jpg");
+    img_path.push_back("/mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000/test/debug.raw.jpg");
+    img_path.push_back("/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/test.img/debug.raw.jpg");
     
     for(size_t i=0; i < img_path.size(); i++){
         size_t spos = img_path[i].rfind('/')+1;
@@ -122,7 +124,7 @@ int main(int argc, char** argv){
         // std::cout << min_val << "," << max_val << std::endl;
         // auto en_time = std::chrono::system_clock::now();
 
-        cv::Mat enhance_img = img_enhance.run(img_rgb, 512, out_path + name + ".lut.jpg", false);
+        cv::Mat enhance_img = img_enhance.run(img_rgb, 540, out_path + name + ".lut.jpg", false);
 
         cv::Mat enhance_img_bgr;
         cv::cvtColor(enhance_img, enhance_img_bgr, cv::COLOR_RGB2BGR);

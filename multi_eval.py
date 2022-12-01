@@ -76,9 +76,9 @@ def inference(onnx_path='', compare_in=None, compare_out=None):
 
 
 if __name__ == '__main__':
-    rhd = open('/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/dir/1.txt', mode='r')
-    dir_names = [line.strip('\n').split('#') for line in rhd.readlines()]
-    rhd.close()
+    # rhd = open('/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/dir/1.txt', mode='r')
+    # dir_names = [line.strip('\n').split('#') for line in rhd.readlines()]
+    # rhd.close()
 
     # compare_paths = [
     #                  '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16/原图',
@@ -99,4 +99,4 @@ if __name__ == '__main__':
 
     onnx_path = '/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/onnx_test/lut16.onnx'
     compare_out = '/mnt/sda1/valid.output/enhance.test/compare-quan'
-    inference('', None, compare_out)
+    inference('./lut.onnx', None, compare_out)

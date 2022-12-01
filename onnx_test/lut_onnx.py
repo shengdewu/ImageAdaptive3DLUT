@@ -269,7 +269,7 @@ class OnnxSession:
                                                         providers=['CPUExecutionProvider', 'CUDAExecutionProvider'])
         return
 
-    def loop(self, data_cfg, skip=True, suppress_size=10, rough_size=None, down_factor=1):
+    def loop(self, data_cfg, skip=True, is_cat=False, suppress_size=0, rough_size=None, down_factor=1, is_padding=False):
         in_path = data_cfg.DATALOADER.DATA_PATH
         out_path = data_cfg.OUTPUT_DIR
 

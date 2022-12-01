@@ -89,4 +89,4 @@ INPUT:
     SATURATION: 1.0
 
 OUTPUT_LOG_NAME: "image.lut"
-OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16
+OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/test
