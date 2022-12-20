@@ -500,9 +500,11 @@ def create_label():
 
     over_name = get_names(over_name_path)
     equal_name = get_names(equal_name_path)
-    under_name = random.choices(get_names(under_name_path), k=len(imbalance_name)+len(over_name))
     over_name.extend(equal_name)
-    # over_name.extend(under_name)
+    under_names = get_names(under_name_path)
+    # select_under_name = int((len(over_name) + len(imbalance_name)) * 2 + 0.5)
+    # under_name = random.sample(under_names, k=min(len(under_names), select_under_name))
+    over_name.extend(under_names)
 
     skip_name = 'skip.txt'
     h = open(os.path.join(root_path, skip_name), mode='r')
@@ -520,7 +522,7 @@ def create_label():
     all_names.extend(imbalance_name)
     random.shuffle(all_names)
     index = [i for i in range(len(all_names))]
-    train_index = random.choices(index, k=int(0.85*len(index)))
+    train_index = random.sample(index, k=int(0.9*len(index)))
 
     train_names = list()
     test_names = list()
@@ -532,17 +534,17 @@ def create_label():
 
     random.shuffle(train_names)
 
-    with open(os.path.join(root_path, 'im_over.train_input.txt'), mode='w') as hd:
+    with open(os.path.join(root_path, 'im.train_input.txt'), mode='w') as hd:
         hd.write('input,gt\n')
         for name in train_names[:int(len(train_names) * 0.5)]:
             hd.write('{},{}\n'.format(name[0], name[1]))
 
-    with open(os.path.join(root_path, 'im_over.train_label.txt'), mode='w') as hd:
+    with open(os.path.join(root_path, 'im.train_label.txt'), mode='w') as hd:
         hd.write('input,gt\n')
         for name in train_names[int(len(train_names) * 0.5):]:
             hd.write('{},{}\n'.format(name[0], name[1]))
 
-    with open(os.path.join(root_path, 'im_over.test.txt'), mode='w') as hd:
+    with open(os.path.join(root_path, 'im.test.txt'), mode='w') as hd:
         hd.write('input,gt\n')
         for name in test_names:
             hd.write('{},{}\n'.format(name[0], name[1]))
@@ -566,34 +568,180 @@ def cp():
     names.extend(get_names(os.path.join(root_path, input_name)))
     names.extend(get_names(os.path.join(root_path, test_name)))
     out_path = '/home/shengdewu/data/xt.image.enhancement.540'
-    for name in names:
+    for name in tqdm.tqdm(names):
         rt_name, gt_name = name.split(',')
 
-        if rt_name.find('rt_tif_16bit_imbalance_540p') == -1:
-            shutil.copy(os.path.join(root_path, rt_name), os.path.join(out_path, rt_name))
+        if os.path.exists(os.path.join(out_path, rt_name)) and os.path.exists(os.path.join(out_path, gt_name)):
+            continue
 
+        shutil.copy(os.path.join(root_path, rt_name), os.path.join(out_path, rt_name))
         shutil.copy(os.path.join(root_path, gt_name), os.path.join(out_path, gt_name))
+
+    shutil.copy(os.path.join(root_path, train_name), os.path.join(out_path, train_name))
+    shutil.copy(os.path.join(root_path, input_name), os.path.join(out_path, input_name))
+    shutil.copy(os.path.join(root_path, test_name), os.path.join(out_path, test_name))
+    return
+
+
+def check():
+    def get_names(path):
+        h = open(path, mode='r')
+        names = [name.strip('\n') for name in h.readlines()]
+        h.close()
+        assert names[0] == 'input,gt'
+        return names[1:]
+
+    root_path = '/home/shengdewu/data/xt.image.enhancement.540'
+    train_name = 'im.train_label.txt'
+    input_name = 'im.train_input.txt'
+    test_name = 'im.test.txt'
+
+    names = get_names(os.path.join(root_path, train_name))
+    names.extend(get_names(os.path.join(root_path, input_name)))
+    names.extend(get_names(os.path.join(root_path, test_name)))
+    for name in tqdm.tqdm(names):
+        rt_name, gt_name = name.split(',')
+        try:
+            img_input = cv2.cvtColor(cv2.imread(os.path.join(root_path, rt_name), -1), cv2.COLOR_BGR2RGB)
+            img_expert = cv2.cvtColor(cv2.imread(os.path.join(root_path, gt_name), -1), cv2.COLOR_BGR2RGB)
+        except Exception as err:
+            print('{}-{}'.format(rt_name, gt_name))
+
+    return
+
+
+def show_im_img():
+    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    im_names = ['im.train_input.txt', 'im.train_label.txt', 'im.test.txt']
+    out_path = '/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/aug2'
+    os.makedirs(out_path, exist_ok=True)
+    names = list()
+    for im_name in im_names:
+        handle = open(os.path.join(root_path, im_name), mode='r')
+        names.extend([name.strip('\n') for name in handle.readlines()][1:])
+        handle.close()
+
+    choices_name = random.sample(names, k=int(0.1*len(names)))
+    for in_name in tqdm.tqdm(choices_name):
+        rt_name, gt_name = in_name.split(',')
+        out_name = rt_name.split('/')[-1]
+        in_img = cv2.imread(os.path.join(root_path, rt_name), cv2.IMREAD_COLOR)
+        gt_img = cv2.imread(os.path.join(root_path, gt_name), cv2.IMREAD_COLOR)
+
+        h1, w1, c = in_img.shape
+        h2, w2, c = gt_img.shape
+        concat_img = np.zeros(shape=(max(h1, h2), w1+w2, c), dtype=in_img.dtype)
+        concat_img[:h1, :w1, :] = in_img
+        concat_img[:h2, w1:w1+w2, :] = gt_img
+        cv2.imwrite(os.path.join(out_path, out_name.replace('tif', 'jpg')), concat_img)
+    return
+
+
+def bright_rt_img():
+    max_value = 65535
+    scale = 255 / 65535
+
+    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    out_sub_path = 'rt_tif_16bit_no_gt_imbalance_540p'
+    out_root = os.path.join(root_path, out_sub_path)
+    os.makedirs(out_root, exist_ok=True)
+
+    select_name_txt = '/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/no_aug.under_bright.txt'
+
+    skip_name = 'skip.txt'
+    h = open(os.path.join(root_path, skip_name), mode='r')
+    skip_names = [name.strip('\n') for name in h.readlines()]
+    h.close()
+
+    handle = open(select_name_txt, mode='r')
+    lines = [name.strip('\n') for name in handle.readlines()]
+    handle.close()
+    assert lines[0] == 'input,gt,diff_gray,i_gray'
+    lines = lines[1:]
+    random.shuffle(lines)
+
+    filter_lines = list()
+    for line in tqdm.tqdm(lines):
+        in_name, gt_name, diff, i_gray = line.split(',')
+        if in_name in skip_names or gt_name in skip_names:
+            continue
+        i_gray = int(i_gray)
+        if i_gray > 200 or i_gray < 20:
+            continue
+        filter_lines.append(line)
+
+    choices_lines = random.sample(filter_lines, k=int(0.3*len(filter_lines)))
+    for line in tqdm.tqdm(choices_lines):
+        in_name, gt_name, diff, i_gray = line.split(',')
+        if in_name in skip_names or gt_name in skip_names:
+            continue
+        i_gray = int(i_gray)
+        diff = int(diff)
+
+        if i_gray > 200 or i_gray < 20:
+            continue
+
+        g_gray = i_gray - diff
+
+        in_path = os.path.join(root_path, in_name)
+        gt_path = os.path.join(root_path, gt_name)
+        assert os.path.exists(in_path) and os.path.exists(gt_path)
+        name = in_name.split('/')[-1]
+        assert name == gt_name.split('/')[-1]
+
+        in_img = cv2.imread(in_path, -1)
+        float_img = in_img.astype(np.float32)
+        arr = name.split('.')
+        exposure = 1.01
+        s = 1
+        enhance_img = float_img.copy()
+        while True:
+            enhance_img = np.clip(adjust_brightness(enhance_img, exposure), 0, max_value).astype(in_img.dtype)
+            # enhance_img = np.clip(adjust_brightness_adaptive(enhance_img, 1.0, exposure), 0, max_value).astype(in_img.dtype)
+            gray = round(np.mean(bgr2luma(enhance_img)) * scale, 2)
+            if gray - i_gray > 20 or exposure > 1.21:
+                break
+            exposure += 0.001 * s
+            s /= 2
+            # exposure += 0.001
+
+        # out_path = os.path.join(out_root, '{}-{}_{}_{}_{}.{}'.format(arr[0], int(gray), round(exposure, 3), i_gray, g_gray, arr[1]))
+        #
+        # gt_img = cv2.imread(gt_path, -1)
+        #
+        # h1, w1, c = in_img.shape
+        # h2, w2, c = gt_img.shape
+        # concat_img = np.zeros(shape=(max(h1, h2), w1 * 2+w2, c), dtype=in_img.dtype)
+        # concat_img[:h1, :w1, :] = in_img
+        # concat_img[:h1, w1:w1*2, :] = enhance_img
+        # concat_img[:h2, w1*2:w1*2+w2, :] = gt_img
+        # cv2.imwrite(out_path, concat_img)
+
+        out_path = os.path.join(out_root, '{}-{}.{}'.format(arr[0], str(round((gray-g_gray), 1)).replace('-', 'f').replace('.', '_'), arr[1]))
+        cv2.imwrite(out_path, enhance_img)
 
     return
 
 
 if __name__ == '__main__':
-    require_txt = [
-        'no_aug.train_input.txt',
-        'no_aug.train_label.txt',
-        'no_aug.test.txt'
-    ]
-    gray_statistics = GrayDataSet(require_txt, '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540')
-    gray_statistics()
+    # require_txt = [
+    #     'no_aug.train_input.txt',
+    #     'no_aug.train_label.txt',
+    #     'no_aug.test.txt'
+    # ]
+    # gray_statistics = GrayDataSet(require_txt, '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540')
+    # gray_statistics()
 
     # select_equal_brightness()
-
+    #
     # add_over_expose()
 
-    # show_aug_img1()
+    # bright_rt_img()
+
+    # show_im_img()
 
     create_label()
-
-    # cp()
+    check()
+    cp()
 
 
