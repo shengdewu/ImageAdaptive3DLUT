@@ -30,7 +30,7 @@ class AdaptivePairedModel(AdaptiveBaseModel):
         tv_cons = sum(tv1) + tv0
         mn_cons = sum(mn1) + mn0
 
-        loss = self.lambda_pixel * loss_pixel + self.lambda_smooth * (weights_norm + tv_cons) + self.lambda_monotonicity * mn_cons
+        loss = self.lambda_pixel * loss_pixel + self.lambda_smooth * tv_cons + self.lambda_class_smooth * weights_norm + self.lambda_monotonicity * mn_cons
 
         psnr_avg = 10 * math.log10(1 / loss_pixel.item())
 
