@@ -1,37 +1,172 @@
-### 3 分钟了解如何进入开发
+# stable config
+1. train
+```python
+DATALOADER:
+  DATASET: ImageDataSetXinTu
+  DATA_PATH: /home/shengdewu/data/xt.image.enhancement.540
+  NUM_WORKERS: 10
+  XT_TEST_MAX_NUMS: 60
+  XT_TEST_TXT: no_aug.test.txt
+  XT_TRAIN_INPUT_TXT: no_aug.train_input.txt
+  XT_TRAIN_LABEL_TXT: no_aug.train_label.txt
+INPUT:
+  COLOR_JITTER:
+    ADAPTIVE_LIGHT:
+      ENABLED: false
+      MAX: 1.2
+      MIN: 0.8
+    BRIGHTNESS:
+      ENABLE: false
+      MAX: 1.05
+      MIN: 0.7
+    CONTRAST:
+      ENABLE: false
+      MAX: 1.1
+      MIN: 0.8
+    PROB: 0.0
+    SATURATION:
+      ENABLE: false
+      MAX: 1.1
+      MIN: 0.7
+  INPUT_OVER_EXPOSURE:
+    ENABLED: false
+    F_MAX: -0.08
+    F_MIN: -0.4
+    F_VALUE: 1.5
+  TRAINING_COLOR_JITTER:
+    BRIGHTNESS:
+      MAX: 1.2
+      THRESHOLD: 0.3
+    CONTRAST: 1.1
+    DARKNESS:
+      MIN: 0.85
+      THRESHOLD: 0.7
+    ENABLE: false
+    SATURATION: 1.0
+MODEL:
+  ARCH: AdaptivePerceptualPairedModel
+  CLASSIFIER:
+    ARCH: MobileNet
+  DEVICE: cuda
+  LUT:
+    DIMS: 16
+    SUPPLEMENT_NUMS: 11
+    ZERO_LUT: true
+  VGG:
+    VGG_LAYER: 14
+    VGG_PATH: /mnt/sdb/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
+  WEIGHTS: ''
+OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16
+OUTPUT_LOG_NAME: image.lut
+SOLVER:
+  BASE_LR: 0.0002
+  WARMUP_ITERS: 100
+  GAMMA: 0.1
+  MAX_ITER: 200000
+  STEPS: (15000, 19000)
+  CHECKPOINT_PERIOD: 5000
+  MAX_KEEP: 10
+  IMS_PER_BATCH: 8
+  TEST_PER_BATCH: 8
+  LAMBDA_GP: 10
+  LAMBDA_PIXEL: 6  # for AdaptiveUnPairedModel 1000
+#  """
+#  1.the LAMBDA_SMOOTH should be small since a heavy smoothness penalty will result in flat 3D LUTs while limited transformation flexibility
+#  2. the LAMBDA_MONOTONICITY , it can be relatively stronger, can help to update the parameters that may be not be activated by input data
+#  3. the LAMBDA_SMOOTH more than 0.0001 leads to worse PSNR , but PSNR is insensitive to the choice LAMBDA_MONOTONICITY
+#  4. base LAMBDA_SMOOTH and LAMBDA_MONOTONICITY (0.0001, 10)
+#  """
+  LAMBDA_CLASS_SMOOTH: 5.0e-05  #正常情况 等于 LAMBDA_SMOOTH
+  LAMBDA_SMOOTH: 1  # 0 0.00001 0.0001 0.001 0.01 0.1
+  LAMBDA_MONOTONICITY: 30 # 0.1 0 1.0 10 100 1000
+  LAMBDA_PERCEPTUAL: 0.05  # value similar LAMBDA_SMOOTH
+  N_CRITIC: 1
+  ADAM:
+    B1: 0.9
+    B2: 0.999
+```
 
-欢迎使用云效 Codeup，通过阅读以下内容，你可以快速熟悉 Codeup ，并立即开始今天的工作。
-
-### 提交**文件**
-
-首先，你需要了解在 Codeup 中如何提交代码文件，跟着文档「[__提交第一行代码__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e7546fd9001aee81fd)」一起操作试试看吧。
-
-### 开启扫描
-
-开发过程中，为了更好的管理你的代码资产，Codeup 内置了「[__代码规约扫描__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e8546fd9001aee821c)」和「[__敏感信息检测__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e8546fd9001aee821b)」服务，你可以在代码库设置-集成与服务中一键开启，开启后提交或合并请求的变更将自动触发扫描，并及时提供结果反馈。
-
-![](https://img.alicdn.com/tfs/TB1nRDatoz1gK0jSZLeXXb9kVXa-1122-380.png "")
-
-![](https://img.alicdn.com/tfs/TB1PrPatXY7gK0jSZKzXXaikpXa-1122-709.png "")
-
-### 代码评审
-
-功能开发完毕后，通常你需要发起「[__代码合并和评审__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e8546fd9001aee8216)」，Codeup 支持多人协作的代码评审服务，你可以通过「[__保护分支__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e9546fd9001aee8221)」策略及「[__合并请求设置__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e9546fd9001aee8224)」对合并过程进行流程化管控，同时提供 WebIDE 在线代码评审及冲突解决能力，让你的评审过程更加流畅。
-
-![](https://img.alicdn.com/tfs/TB1XHrctkP2gK0jSZPxXXacQpXa-1432-887.png "")
-
-![](https://img.alicdn.com/tfs/TB1V3fctoY1gK0jSZFMXXaWcVXa-1432-600.png "")
-
-### 编写文档
-
-项目推进过程中，你的经验和感悟可以直接记录到 Codeup 代码库的「[__文档__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e8546fd9001aee8213)」内，让智慧可视化。
-
-![](https://img.alicdn.com/tfs/TB1BN2ateT2gK0jSZFvXXXnFXXa-1432-700.png "")
-
-### 成员协作
-
-是时候邀请成员一起编写卓越的代码工程了，请点击右上角「成员」邀请你的小伙伴开始协作吧！
-
-### 更多
-
-Git 使用教学、高级功能指引等更多说明，参见[__Codeup帮助文档__](https://thoughts.aliyun.com/sharespace/5e8c37eb546fd9001aee8242/docs/5e8c37e6546fd9001aee81fa)。
+2. pretrain
+```python
+DATALOADER:
+  DATASET: ImageDataSetXinTu
+  DATA_PATH: /home/shengdewu/data/xt.image.enhancement.540
+  NUM_WORKERS: 8
+  XT_TEST_MAX_NUMS: 100
+  XT_TEST_TXT: over_under.test.txt
+  XT_TRAIN_INPUT_TXT: over_under.train_input.txt
+  XT_TRAIN_LABEL_TXT: over_under.train_label.txt
+INPUT:
+  COLOR_JITTER:
+    ADAPTIVE_LIGHT:
+      ENABLED: false
+      MAX: 1.2
+      MIN: 0.8
+    BRIGHTNESS:
+      ENABLE: false
+      MAX: 1.1
+      MIN: 0.8
+    CONTRAST:
+      ENABLE: false
+      MAX: 1.1
+      MIN: 0.8
+    PROB: 0.0
+    SATURATION:
+      ENABLE: false
+      MAX: 1.1
+      MIN: 0.7
+  INPUT_OVER_EXPOSURE:
+    ENABLED: false
+    F_MAX: -0.08
+    F_MIN: -0.4
+    F_VALUE: 1.5
+  TRAINING_COLOR_JITTER:
+    BRIGHTNESS:
+      MAX: 1.2
+      THRESHOLD: 0.3
+    CONTRAST: 1.1
+    DARKNESS:
+      MIN: 0.85
+      THRESHOLD: 0.7
+    ENABLE: false
+    SATURATION: 1.0
+MODEL:
+  ARCH: AdaptivePairedModel
+  CLASSIFIER:
+    ARCH: MobileNet
+    ROUGH_SIZE: 540
+  DEVICE: cuda
+  LUT:
+    DIMS: 16
+    SUPPLEMENT_NUMS: 11
+    ZERO_LUT: true
+  WEIGHTS: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16/AdaptivePerceptualPairedModel_final.pth
+OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/lut.pretrain
+OUTPUT_LOG_NAME: image.lut
+SOLVER:
+  BASE_LR: 0.00001
+  WARMUP_ITERS: 100
+  GAMMA: 0.1
+  MAX_ITER: 100000
+  STEPS: (40000, 80000)
+  CHECKPOINT_PERIOD: 5000
+  MAX_KEEP: 10
+  IMS_PER_BATCH: 8
+  TEST_PER_BATCH: 2
+#  LAMBDA_GP: 10
+  LAMBDA_PIXEL: 100  # for AdaptiveUnPairedModel 1000
+#  """
+#  1.the LAMBDA_SMOOTH should be small since a heavy smoothness penalty will result in flat 3D LUTs while limited transformation flexibility
+#  2. the LAMBDA_MONOTONICITY , it can be relatively stronger, can help to update the parameters that may be not be activated by input data
+#  3. the LAMBDA_SMOOTH more than 0.0001 leads to worse PSNR , but PSNR is insensitive to the choice LAMBDA_MONOTONICITY
+#  4. base LAMBDA_SMOOTH and LAMBDA_MONOTONICITY (0.0001, 10)
+#  """
+  LAMBDA_CLASS_SMOOTH: 5.0e-05  #正常情况 等于 LAMBDA_SMOOTH
+  LAMBDA_SMOOTH: 1  # 0 0.00001 0.0001 0.001 0.01 0.1
+  LAMBDA_MONOTONICITY: 30 # 0.1 0 1.0 10 100 1000
+  # LAMBDA_PERCEPTUAL: 0.05  # value similar LAMBDA_SMOOTH
+  N_CRITIC: 1
+  ADAM:
+    B1: 0.9
+    B2: 0.999
+```

@@ -4,7 +4,7 @@ import tqdm
 from inference.eval import Inference
 from dataloader.build import build_dataset
 import logging
-from .eval import Resize, Interpolate
+from .eval import RoughResize, Interpolate
 
 
 class InferenceNoneGt(Inference):
@@ -17,8 +17,8 @@ class InferenceNoneGt(Inference):
             assert (isinstance(special_name, list) or isinstance(special_name, tuple)) and len(special_name) > 0
 
         if rough_size is not None:
-            resize_fn = Resize(rough_size, is_padding=is_padding)
-            flag = '{}-resize{}{}'.format(self.flag, rough_size, 'p' if is_padding else '')
+            resize_fn = RoughResize(rough_size)
+            flag = '{}-resize{}'.format(self.flag, rough_size)
         else:
             resize_fn = Interpolate(down_factor)
             flag = '{}-factor{}'.format(self.flag, down_factor)

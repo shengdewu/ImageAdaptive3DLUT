@@ -49,6 +49,20 @@ class Resize:
         return format_string
 
 
+class RoughResize:
+    def __init__(self, target_size):
+        self.target_size = target_size
+        return
+
+    def __call__(self, img: torch.Tensor):
+        return ttf.resize(img, size=[self.target_size, self.target_size])
+
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '('
+        format_string += 'target_size={0})'.format(self.target_size)
+        return format_string
+
+
 class Interpolate:
     def __init__(self, factor=1):
         self.factor = factor

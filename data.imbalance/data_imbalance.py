@@ -311,7 +311,7 @@ def select_equal_brightness():
                 if rt.find(discard_key) != -1:
                     continue
 
-                if diff == 0:
+                if abs(diff) <= 5:
                     equal_names.append((rt, gt, diff, i_gray))
                 elif diff > 0:
                     over_names.append((rt, gt, diff, i_gray))
@@ -321,22 +321,22 @@ def select_equal_brightness():
                 if -10 < diff <= -1:
                     select_names.append((rt, gt, diff, i_gray))
 
-    with open('/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/no_aug.select.txt', mode='w') as handle:
-        handle.write('input,gt,diff_gray,i_gray\n')
-        for rt, gt, diff, i_gray in select_names:
-            handle.write('{},{},{},{}\n'.format(rt, gt, diff, i_gray))
+    # with open('/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/no_aug.select.txt', mode='w') as handle:
+    #     handle.write('input,gt,diff_gray,i_gray\n')
+    #     for rt, gt, diff, i_gray in select_names:
+    #         handle.write('{},{},{},{}\n'.format(rt, gt, diff, i_gray))
 
-    with open('/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/no_aug.equal_bright.txt', mode='w') as handle:
+    with open('no_aug.equal_bright.txt', mode='w') as handle:
         handle.write('input,gt,diff_gray,i_gray\n')
         for rt, gt, diff, i_gray in equal_names:
             handle.write('{},{},{},{}\n'.format(rt, gt, diff, i_gray))
 
-    with open('/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/no_aug.under_bright.txt', mode='w') as handle:
+    with open('no_aug.under_bright.txt', mode='w') as handle:
         handle.write('input,gt,diff_gray,i_gray\n')
         for rt, gt, diff, i_gray in under_names:
             handle.write('{},{},{},{}\n'.format(rt, gt, diff, i_gray))
 
-    with open('/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/no_aug.over_bright.txt', mode='w') as handle:
+    with open('no_aug.over_bright.txt', mode='w') as handle:
         handle.write('input,gt,diff_gray,i_gray\n')
         for rt, gt, diff, i_gray in over_names:
             handle.write('{},{},{},{}\n'.format(rt, gt, diff, i_gray))
@@ -564,6 +564,12 @@ def cp():
     input_name = 'im.train_input.txt'
     test_name = 'im.test.txt'
 
+    with open(os.path.join(root_path, 'imbalance_gt.txt'), mode='w') as handle:
+        handle.write('input,gt\n')
+        for im_name, gt_name in imbalance_name:
+            handle.write('{},{}\n'.format(im_name, gt_name))
+
+
     names = get_names(os.path.join(root_path, train_name))
     names.extend(get_names(os.path.join(root_path, input_name)))
     names.extend(get_names(os.path.join(root_path, test_name)))
@@ -611,7 +617,7 @@ def check():
 
 
 def show_im_img():
-    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    root_path = '/home/shengdewu/data/xt.image.enhancement.540.jpg'
     im_names = ['im.train_input.txt', 'im.train_label.txt', 'im.test.txt']
     out_path = '/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/aug2'
     os.makedirs(out_path, exist_ok=True)
@@ -723,6 +729,661 @@ def bright_rt_img():
     return
 
 
+def class_img():
+    out_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
+    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    rt_sub = 'rt_tif_16bit_540p'
+    gt_sub = 'gt_16bit_540p'
+
+    cls_names = dict()
+    for name in tqdm.tqdm(os.listdir(os.path.join(root_path, rt_sub))):
+        cls_name = name.split('_')[0]
+        if cls_names.get(cls_name, None) is None:
+            cls_names[cls_name] = list()
+        cls_names[cls_name].append((os.path.join(rt_sub, name), os.path.join(gt_sub, name)))
+        # shutil.copy(os.path.join(root_path, rt_sub, name), os.path.join(out_root, cls_name, rt_sub, name))
+        # shutil.copy(os.path.join(root_path, gt_sub, name), os.path.join(out_root, cls_name, gt_sub, name))
+
+    os.makedirs(out_root, exist_ok=True)
+    for k, names in cls_names.items():
+        with open(os.path.join(out_root, '{}.txt'.format(k)), mode='w') as f:
+            for name in names:
+                f.write('{},{}\n'.format(name[0], name[1]))
+
+    total_nums = sum([len(v) for k, v in cls_names.items()])
+    print(total_nums)
+    total_key = sorted(cls_names.items(), key=lambda item:len(item[1]))
+    with open(os.path.join(out_root, 'total-{}.txt'.format(total_nums)), mode='w') as f:
+        for k, v in total_key:
+            f.write('{}: {}\n'.format(k, len(v)))
+    return
+
+
+def select_class_img():
+    cls_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
+    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    out_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.select.540'
+    rt_sub = 'rt_tif_16bit_540p'
+    gt_sub = 'gt_16bit_540p'
+
+    total_nums = 0
+    txt_names = os.listdir(cls_root)
+    for txt_name in txt_names:
+        if txt_name.find('total-') != -1:
+            continue
+        f = open(os.path.join(cls_root, txt_name), mode='r')
+        names = [name.strip().split(',') for name in f.readlines()]
+        f.close()
+
+        cls_out_path = os.path.join(out_root, txt_name.split('.')[0])
+        rt_out_path = os.path.join(cls_out_path, rt_sub)
+        gt_out_path = os.path.join(cls_out_path, gt_sub)
+        # os.makedirs(rt_out_path, exist_ok=True)
+        os.makedirs(gt_out_path, exist_ok=True)
+
+        select_names = random.sample(names, k=max(min(10, len(names)), int(len(names) * 0.25)))
+
+        for name in select_names:
+            assert name[0].find(rt_sub) != -1 and name[1].find(gt_sub) != -1
+            # shutil.copy(os.path.join(root_path, name[0]), os.path.join(cls_out_path, name[0]))
+            shutil.copy(os.path.join(root_path, name[1]), os.path.join(cls_out_path, name[1]))
+
+        total_nums += len(os.listdir(gt_out_path))
+    
+    print(total_nums)
+    return
+
+
+def select_img():
+    out_root = '/mnt/sdb/data.set/xintu.data/enhance.data/txt'
+    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
+    rt_sub = 'rt_tif_16bit_540p'
+    gt_sub = 'gt_16bit_540p'
+    nums = 5
+    
+    total_key = dict()
+
+    for sub_dir in tqdm.tqdm(os.listdir(root_path)): 
+        if sub_dir.endswith('txt'):
+            continue
+        sub_gt_path = os.path.join(root_path, sub_dir, gt_sub)
+        names = os.listdir(sub_gt_path)
+        total_key[sub_dir] = len(names)
+        # for name in random.sample(names, k=min(len(names), nums)):
+        #     shutil.copy(os.path.join(sub_gt_path, name), os.path.join(out_root, name))
+
+    total_key = sorted(total_key.items(), key=lambda item:item[1])
+    with open(os.path.join(root_path, 'cls.txt'), mode='w') as f:
+        for k, v in total_key:
+            f.write('{}: {}\n'.format(k, v))
+
+
+def add_over_expose_by_gt():
+
+    max_value = 65535
+    scale = 255 / 65535
+
+    def bright(img_path):
+        in_img = cv2.imread(img_path, -1)
+        float_img = in_img.astype(np.float32)
+        
+        gray = round(np.mean(bgr2luma(float_img)) * scale, 2)
+        max_factor = 22
+        if gray >= 200:
+            max_factor = 10
+        exposure = 1 + random.randrange(5, max_factor, 2) / 100
+        # print(exposure)
+        enhance_img = np.clip(adjust_brightness(float_img, exposure), 0, max_value).astype(in_img.dtype)
+        return enhance_img, exposure
+
+    out_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.over.540'
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    cls_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
+    gt_sub = 'gt_16bit_540p'
+    rt_sub = 'rt_tif_16bit_540p'
+
+    os.makedirs(out_root_path, exist_ok=True)
+
+    over_name = 'over'
+    gt_name = 'gt'
+    total_nums = 0
+    txt_names = os.listdir(cls_root)
+    for txt_name in txt_names:
+        if txt_name.find('total-') != -1:
+            continue
+        f = open(os.path.join(cls_root, txt_name), mode='r')
+        names = [name.strip().split(',') for name in f.readlines()]
+        f.close()
+
+        # over_out_path = os.path.join(out_root_path, txt_name.split('.')[0], over_name)
+        # gt_out_path = os.path.join(out_root_path, txt_name.split('.')[0], gt_name)
+        # os.makedirs(gt_out_path, exist_ok=True)
+        # os.makedirs(over_out_path, exist_ok=True)
+
+        select_names = random.sample(names, k=max(min(10, len(names)), int(len(names) * 0.2)))
+        for name in select_names:
+            assert name[0].find(rt_sub) != -1 and name[1].find(gt_sub) != -1
+            gname = os.path.join(in_root_path, name[1])
+            oname = name[1].split('/')[-1]
+            enhance_img, exposure = bright(gname)
+            cv2.imwrite(os.path.join(out_root_path, oname), enhance_img)
+            # shutil.copy(gname, os.path.join(gt_out_path, oname))
+
+        # total_nums += len(os.listdir(over_out_path))
+    print(len(os.listdir(out_root_path)))
+    return
+
+
+def split_over_expose_by_gt():
+    def get_names(path):
+        h = open(path, mode='r')
+        names = [name.strip('\n') for name in h.readlines()]
+        h.close()
+        return names
+
+    def select_names(name_type='no_aug.under_bright.txt'):
+        select_names_pair = list()
+        remind_keys = list()
+        equal_name_path = '/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/{}'.format(name_type)
+        with open(equal_name_path, mode='r') as f:
+            names = [name.strip('\n') for name in f.readlines()]
+            assert names[0] == 'input,gt,diff_gray,i_gray'
+            for name in names[1:]:
+                arr = name.split(',')
+                key = arr[0].split('/')[-1]
+                assert key not in remind_keys
+                remind_keys.append(key)
+                select_names_pair.append((arr[0], arr[1]))
+                # print('{}-{}'.format(arr[0], arr[1]))
+        return select_names_pair,  remind_keys
+
+    # select_names_pair, remind_keys = select_names()
+    #
+    # print('select_names_pair = {}'.format(len(select_names_pair)))
+
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    gt_txt = 'gt_16bit_540p.txt'
+    rt_txt = 'rt_tif_16bit_540p.txt'
+    over_txt = 'rt_16bit_over_540p.txt'
+
+    gt_names = get_names(os.path.join(in_root_path, gt_txt))
+    rt_names = get_names(os.path.join(in_root_path, rt_txt))
+    over_names = get_names(os.path.join(in_root_path, over_txt))
+
+    print('over = {}'.format(len(over_names)))
+
+    over_keys_names = dict([(name.split('/')[-1], name) for name in over_names])
+    gt_keys_names = dict([(name.split('/')[-1], name) for name in gt_names])
+    rt_keys_names = dict([(name.split('/')[-1], name) for name in rt_names])
+
+    names_pair = list()
+    for key, name in over_keys_names.items():
+        names_pair.append((name, gt_keys_names[key]))
+
+    print('over pair {}'.format(len(names_pair)))
+
+    # names_pair = random.sample(select_names_pair, k=min(len(over_names_pair), int(len(select_names_pair)*0.5)))
+    #
+    # names_pair.extend(over_names_pair)
+
+    # remind_keys.extend(over_keys_names.keys())
+
+    index = 0
+    rt_names_pair = list()
+    for key, name in rt_keys_names.items():
+        # if key in over_keys_names.keys():
+        #     index += 1
+        #     continue
+        if not os.path.exists(os.path.join(in_root_path, name)) or not os.path.exists(os.path.join(in_root_path, gt_keys_names[key])):
+            continue
+        rt_names_pair.append((name, gt_keys_names[key]))
+    
+    print('rt pair {}, rt {}'.format(len(rt_names_pair), len(rt_keys_names)))
+    
+    # index = [i for i in range(len(rt_names_pair))]
+    # random.shuffle(rt_names_pair)
+    rt_names_pair = random.sample(rt_names_pair, k=int(len(names_pair)*2))
+    print('select rt {}'.format(len(rt_names_pair)))
+    names_pair.extend(rt_names_pair)
+    print('total pair {}'.format(len(names_pair)))
+
+    out_root_path = '/home/shengdewu/data/xt.image.enhancement.540'
+
+    random.shuffle(names_pair)
+    test_nums = int(0.05 * len(names_pair))
+    test_names = names_pair[: test_nums]
+    train_names = names_pair[test_nums: ]
+    train_point = int(0.5 * len(train_names))
+    print('train {}, test {}'.format(len(train_names), len(test_names)))
+    with open(os.path.join(out_root_path, 'im.test.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in test_names:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'im.train_input.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[: train_point]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'im.train_label.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[train_point :]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    tmp_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.tmp'
+    os.makedirs(os.path.join(tmp_root_path, 'gt_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_tif_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_16bit_over_540p'), exist_ok=True)
+
+    os.makedirs(os.path.join(out_root_path, 'gt_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_tif_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_16bit_over_540p'), exist_ok=True)
+
+    for name in tqdm.tqdm(names_pair):
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0])))
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1])))
+        if os.path.exists(os.path.join(out_root_path, name[0])) and os.path.exists(os.path.join(out_root_path, name[1])):
+            continue
+
+        shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0]))
+        shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1]))
+        if random.random() <= 0.01:
+            shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(tmp_root_path, name[0]))
+            shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(tmp_root_path, name[1]))            
+    return
+
+
+def split_only_over_expose_by_gt():
+    def get_names(path):
+        h = open(path, mode='r')
+        names = [name.strip('\n') for name in h.readlines()]
+        h.close()
+        return names
+
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    gt_txt = 'gt_16bit_540p.txt'
+    over_txt = 'rt_16bit_over_540p.txt'
+
+    gt_names = get_names(os.path.join(in_root_path, gt_txt))
+    over_names = get_names(os.path.join(in_root_path, over_txt))
+
+    print('over = {}'.format(len(over_names)))
+
+    over_keys_names = dict([(name.split('/')[-1], name) for name in over_names])
+    gt_keys_names = dict([(name.split('/')[-1], name) for name in gt_names])
+
+    over_names_pair = list()
+    for key, name in over_keys_names.items():
+        over_names_pair.append((name, gt_keys_names[key]))
+
+    print('over pair {}'.format(len(over_names_pair)))
+
+    out_root_path = '/home/shengdewu/data/xt.image.enhancement.540'
+
+    random.shuffle(over_names_pair)
+    test_nums = int(0.05 * len(over_names_pair))
+    test_names = over_names_pair[: test_nums]
+    train_names = over_names_pair[test_nums: ]
+    train_point = int(0.5 * len(train_names))
+    print('train {}, test {}'.format(len(train_names), len(test_names)))
+    with open(os.path.join(out_root_path, 'over.test.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in test_names:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'over.train_input.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[: train_point]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'over.train_label.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[train_point :]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    # tmp_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.tmp'
+    # os.makedirs(os.path.join(tmp_root_path, 'gt_16bit_540p'), exist_ok=True)
+    # os.makedirs(os.path.join(tmp_root_path, 'rt_tif_16bit_540p'), exist_ok=True)
+    # os.makedirs(os.path.join(tmp_root_path, 'rt_16bit_over_540p'), exist_ok=True)
+
+    # os.makedirs(os.path.join(out_root_path, 'gt_16bit_540p'), exist_ok=True)
+    # os.makedirs(os.path.join(out_root_path, 'rt_tif_16bit_540p'), exist_ok=True)
+    # os.makedirs(os.path.join(out_root_path, 'rt_16bit_over_540p'), exist_ok=True)
+
+    # for name in tqdm.tqdm(over_names_pair):
+    #     # print('{} -> {}'.format(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0])))
+    #     # print('{} -> {}'.format(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1])))
+    #     if os.path.exists(os.path.join(out_root_path, name[0])) and os.path.exists(os.path.join(out_root_path, name[1])):
+    #         continue
+    #     shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0]))
+    #     shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1]))
+    #     if random.random() <= 0.01:
+    #         shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(tmp_root_path, name[0]))
+    #         shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(tmp_root_path, name[1]))            
+    return
+
+
+def add_under_expose_by_gt():
+
+    max_value = 65535
+    scale = 255 / 65535
+
+    def bright(img_path):
+        in_img = cv2.imread(img_path, -1)
+        float_img = in_img.astype(np.float32)
+        
+        gray = round(np.mean(bgr2luma(float_img)) * scale, 2)
+        max_factor = 20
+        min_factor = 5
+        if gray >= 150:
+            max_factor = 40
+            min_factor = 10
+        exposure = 1 - random.randrange(min_factor, max_factor, 5) / 100
+        # print(exposure)
+        enhance_img = np.clip(adjust_brightness(float_img, exposure), 0, max_value).astype(in_img.dtype)
+        return enhance_img, exposure
+
+    out_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540/rt_16bit_under_540p'
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    cls_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
+    gt_sub = 'gt_16bit_540p'
+    rt_sub = 'rt_tif_16bit_540p'
+
+    os.makedirs(out_root_path, exist_ok=True)
+
+    over_name = 'over'
+    gt_name = 'gt'
+    total_nums = 0
+    txt_names = os.listdir(cls_root)
+    random.shuffle(txt_names)
+    
+    for txt_name in txt_names:
+        if txt_name.find('total-') != -1:
+            continue
+        f = open(os.path.join(cls_root, txt_name), mode='r')
+        names = [name.strip().split(',') for name in f.readlines()]
+        f.close()
+
+        # over_out_path = os.path.join(out_root_path, txt_name.split('.')[0], over_name)
+        # gt_out_path = os.path.join(out_root_path, txt_name.split('.')[0], gt_name)
+        # os.makedirs(gt_out_path, exist_ok=True)
+        # os.makedirs(over_out_path, exist_ok=True)
+
+        select_names = random.sample(names, k=max(min(10, len(names)), int(len(names) * 0.3)))
+        for name in select_names:
+            assert name[0].find(rt_sub) != -1 and name[1].find(gt_sub) != -1
+            gname = os.path.join(in_root_path, name[1])
+            oname = name[1].split('/')[-1]
+            enhance_img, exposure = bright(gname)
+            cv2.imwrite(os.path.join(out_root_path, oname), enhance_img)
+            # shutil.copy(gname, os.path.join(gt_out_path, oname))
+
+        # total_nums += len(os.listdir(over_out_path))
+    print(len(os.listdir(out_root_path)))
+    return
+
+
+def split_only_over_under_expose_by_gt():
+    def get_names(path):
+        h = open(path, mode='r')
+        names = [name.strip('\n') for name in h.readlines()]
+        h.close()
+        return names
+
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    gt_txt = 'gt_16bit_540p.txt'
+    over_txt = 'rt_16bit_over_540p.txt'
+    under_txt = 'rt_16bit_under_540p.txt'
+    rt_txt = 'rt_tif_16bit_540p.txt'
+
+    gt_names = get_names(os.path.join(in_root_path, gt_txt))
+    over_names = get_names(os.path.join(in_root_path, over_txt))
+    under_names = get_names(os.path.join(in_root_path, rt_txt))
+
+    under_names = random.sample(under_names, k=int(len(over_names)*1.2))
+    print('over = {}'.format(len(over_names)))
+    print('under = {}'.format(len(under_names)))
+
+    over_keys_names = dict([(name.split('/')[-1], name) for name in over_names])
+    under_keys_names = dict([(name.split('/')[-1], name) for name in under_names])
+    gt_keys_names = dict([(name.split('/')[-1], name) for name in gt_names])
+
+    names_pair = list()
+    for key, name in over_keys_names.items():
+        names_pair.append((name, gt_keys_names[key]))
+
+    for key, name in under_keys_names.items():
+        names_pair.append((name, gt_keys_names[key]))
+
+    print('over pair {}'.format(len(names_pair)))
+
+    out_root_path = '/home/shengdewu/data/xt.image.enhancement.540'
+
+    random.shuffle(names_pair)
+    test_nums = int(0.05 * len(names_pair))
+    test_names = names_pair[: test_nums]
+    train_names = names_pair[test_nums: ]
+    train_point = int(0.5 * len(train_names))
+    print('train {}, test {}'.format(len(train_names), len(test_names)))
+    with open(os.path.join(out_root_path, 'over_under.test.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in test_names:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'over_under.train_input.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[: train_point]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'over_under.train_label.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[train_point :]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    tmp_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.tmp'
+    os.makedirs(os.path.join(tmp_root_path, 'gt_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_16bit_under_540p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_16bit_over_540p'), exist_ok=True)
+
+    os.makedirs(os.path.join(out_root_path, 'gt_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_16bit_under_540p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_16bit_over_540p'), exist_ok=True)
+
+    for name in tqdm.tqdm(names_pair):
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0])))
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1])))
+        if os.path.exists(os.path.join(out_root_path, name[0])) and os.path.exists(os.path.join(out_root_path, name[1])):
+            continue
+        shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0]))
+        shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1]))
+        if random.random() <= 0.01:
+            shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(tmp_root_path, name[0]))
+            shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(tmp_root_path, name[1]))            
+    return
+
+
+def add_over_expose_by_gt_jpg():
+
+    max_value = 255
+
+    def bright(img_path):
+        in_img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        float_img = in_img.astype(np.float32)
+        
+        gray = round(np.mean(bgr2luma(float_img)), 2)
+
+        max_factor = 22
+        if gray >= 200:
+            max_factor = 10
+        exposure = 1 + random.randrange(5, max_factor, 2) / 100
+        # print(exposure)
+        enhance_img = np.clip(adjust_brightness(float_img, exposure), 0, max_value).astype(in_img.dtype)
+        return enhance_img, exposure
+
+    out_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg/rt_8bit_only_adjust_light_over_1500p'
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg'
+    cls_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
+    gt_sub = 'gt_16bit_540p'
+    rt_sub = 'rt_tif_16bit_540p'
+
+    os.makedirs(out_root_path, exist_ok=True)
+
+    over_name = 'over'
+    gt_name = 'gt'
+    total_nums = 0
+    txt_names = os.listdir(cls_root)
+    for txt_name in txt_names:
+        if txt_name.find('total-') != -1:
+            continue
+        f = open(os.path.join(cls_root, txt_name), mode='r')
+        names = [name.strip().split(',') for name in f.readlines()]
+        f.close()
+
+        # over_out_path = os.path.join(out_root_path, txt_name.split('.')[0], over_name)
+        # gt_out_path = os.path.join(out_root_path, txt_name.split('.')[0], gt_name)
+        # os.makedirs(gt_out_path, exist_ok=True)
+        # os.makedirs(over_out_path, exist_ok=True)
+
+        select_names = random.sample(names, k=max(min(10, len(names)), int(len(names) * 0.2)))
+        for name in select_names:
+            assert name[0].find(rt_sub) != -1 and name[1].find(gt_sub) != -1
+            oname = name[1].split('/')[-1].replace('.tif', '.jpg')
+            gname = os.path.join(in_root_path, 'gt_8bit_1500p_only_adjust_light', oname)
+
+            enhance_img, exposure = bright(gname)
+            cv2.imwrite(os.path.join(out_root_path, oname), enhance_img)
+            # shutil.copy(gname, os.path.join(gt_out_path, oname))
+
+        # total_nums += len(os.listdir(over_out_path))
+    print(len(os.listdir(out_root_path)))
+    return
+
+
+def split_over_expose_by_gt_jpg():
+    def get_names(path):
+        h = open(path, mode='r')
+        names = [name.strip('\n') for name in h.readlines()]
+        h.close()
+        return names
+
+    # def select_names(name_type='no_aug.under_bright.txt'):
+    #     root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg'
+    #     select_names_pair = list()
+    #     remind_keys = list()
+    #     equal_name_path = '/mnt/sdb/data.set/xintu.data/enhance.data/img.gray.statistics/{}'.format(name_type)
+    #     with open(equal_name_path, mode='r') as f:
+    #         names = [name.strip('\n') for name in f.readlines()]
+    #         assert names[0] == 'input,gt,diff_gray,i_gray'
+    #         for name in names[1:]:
+    #             name = name.replace('rt_tif_16bit_540p', 'rt_8bit_1500p')
+    #             name = name.replace('gt_16bit_540p', 'gt_8bit_1500p_only_adjust_light')
+    #             name = name.replace('tif', 'jpg')
+    #             arr = name.split(',')
+    #             if not os.path.exists(os.path.join(root_path, arr[0])) or not os.path.exists(os.path.join(root_path, arr[1])):
+    #                 continue
+    #             key = arr[0].split('/')[-1]
+    #             assert key not in remind_keys
+    #             remind_keys.append(key)
+    #             select_names_pair.append((arr[0], arr[1]))
+    #             # print('{}-{}'.format(arr[0], arr[1]))
+    #     return select_names_pair,  remind_keys
+    #
+    # select_names_pair, remind_keys = select_names()
+
+    # print('select_names_pair = {}'.format(len(select_names_pair)))
+
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg'
+    gt_txt = 'gt_8bit_1500p_only_adjust_light.txt'
+    rt_txt = 'rt_8bit_1500p.txt'
+    over_txt = 'rt_8bit_only_adjust_light_over_1500p.txt'
+
+    gt_names = get_names(os.path.join(in_root_path, gt_txt))
+    rt_names = get_names(os.path.join(in_root_path, rt_txt))
+    over_names = get_names(os.path.join(in_root_path, over_txt))
+
+    print('over = {}'.format(len(over_names)))
+
+    over_keys_names = dict([(name.split('/')[-1], name) for name in over_names])
+    gt_keys_names = dict([(name.split('/')[-1], name) for name in gt_names])
+    rt_keys_names = dict([(name.split('/')[-1], name) for name in rt_names])
+
+    names_pair = list()
+    # for key, name in over_keys_names.items():
+    #     names_pair.append((name, gt_keys_names[key]))
+    #
+    # print('over pair {}'.format(len(names_pair)))
+
+    # names_pair = random.sample(select_names_pair, k=int(len(select_names_pair)*0.5))
+    # print('select pair {}'.format(len(names_pair)))
+
+    # remind_keys.extend(over_keys_names.keys())
+
+    index = 0
+    rt_names_pair = list()
+    for key, name in rt_keys_names.items():
+        if key in over_keys_names.keys():
+            index += 1
+            continue
+        if not os.path.exists(os.path.join(in_root_path, name)) or not os.path.exists(os.path.join(in_root_path, gt_keys_names[key])):
+            continue
+        rt_names_pair.append((name, gt_keys_names[key]))
+    
+    print('rt pair {}, rt {}'.format(len(rt_names_pair), len(rt_keys_names)))
+    
+    # index = [i for i in range(len(rt_names_pair))]
+    # random.shuffle(rt_names_pair)
+    # rt_names_pair = random.sample(rt_names_pair, k=int(len(names_pair)*2))
+    print('select rt {}'.format(len(rt_names_pair)))
+    names_pair.extend(rt_names_pair)
+    print('total pair {}'.format(len(names_pair)))
+
+    out_root_path = '/home/shengdewu/data/xt.image.enhancement.540.jpg'
+    os.makedirs(out_root_path, exist_ok=True)
+
+    random.shuffle(names_pair)
+    test_nums = int(0.05 * len(names_pair))
+    test_names = names_pair[: test_nums]
+    train_names = names_pair[test_nums: ]
+    train_point = int(0.5 * len(train_names))
+    print('train {}, test {}'.format(len(train_names), len(test_names)))
+    with open(os.path.join(out_root_path, 'only_light.test.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in test_names:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'only_light.train_input.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[: train_point]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'only_light.train_label.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[train_point :]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    tmp_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg.tmp'
+    os.makedirs(os.path.join(tmp_root_path, 'gt_8bit_1500p_only_adjust_light'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_8bit_1500p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_8bit_only_adjust_light_over_1500p'), exist_ok=True)
+
+    os.makedirs(os.path.join(out_root_path, 'gt_8bit_1500p_only_adjust_light'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_8bit_1500p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_8bit_only_adjust_light_over_1500p'), exist_ok=True)
+
+    for name in tqdm.tqdm(names_pair):
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0])))
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1])))
+        if os.path.exists(os.path.join(out_root_path, name[0])) and os.path.exists(os.path.join(out_root_path, name[1])):
+            continue
+
+        shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0]))
+        shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1]))
+        if random.random() <= 0.01:
+            shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(tmp_root_path, name[0]))
+            shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(tmp_root_path, name[1]))            
+    return
+
+
 if __name__ == '__main__':
     # require_txt = [
     #     'no_aug.train_input.txt',
@@ -740,8 +1401,18 @@ if __name__ == '__main__':
 
     # show_im_img()
 
-    create_label()
-    check()
-    cp()
+    # create_label()
+    # check()
+    # cp()
+    # select_img()
+    # class_img()
+    # select_class_img()
+    # add_over_expose_by_gt()
+    # add_under_expose_by_gt()
+    # split_over_expose_by_gt()
+    # split_only_over_expose_by_gt()
+    split_only_over_under_expose_by_gt()
+    # add_over_expose_by_gt_jpg()
+    # split_over_expose_by_gt_jpg()
 
 
