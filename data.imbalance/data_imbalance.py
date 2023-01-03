@@ -11,6 +11,22 @@ import shutil
 
 
 """
+暖色 [2008, 2009, 2012, 3106, 6003]
+纯黑背景 [1014, 1020, 1050, 1173, 3105, 5019]
+夜景 [1015, 1021, 1121, 1123, 1130, 1133, 5037]
+剪映 [1030, 1136]
+存灰背景 [1042]
+衣服白纱 [1047]
+暗场景 [1059, 1113, 1124, 1132, 1142, 1144, 1161, 1163, 2000, 5032, 6002]
+暗场景+灯光 [1060, 5039, 5040]
+纯白背景 [1067, 1079]
+黄昏 [1070, 1075, 1115, 1194]
+阳光 [1081, 1086, 1088, 1089, 1128, 1152]
+夜景+篝火 [1094]
+白纱+阳光 [1097, 1118]
+灯光 [5041]
+"""
+"""
 resolve missing overexposure data
 """
 
@@ -760,35 +776,39 @@ def class_img():
 
 
 def select_class_img():
+    factor = [5]
+
     cls_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.cls.540'
     root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
-    out_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.select.540'
+    out_root = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.select.under'
     rt_sub = 'rt_tif_16bit_540p'
     gt_sub = 'gt_16bit_540p'
 
     total_nums = 0
     txt_names = os.listdir(cls_root)
-    for txt_name in txt_names:
+    for txt_name in tqdm.tqdm(txt_names):
         if txt_name.find('total-') != -1:
             continue
         f = open(os.path.join(cls_root, txt_name), mode='r')
         names = [name.strip().split(',') for name in f.readlines()]
         f.close()
 
-        cls_out_path = os.path.join(out_root, txt_name.split('.')[0])
-        rt_out_path = os.path.join(cls_out_path, rt_sub)
-        gt_out_path = os.path.join(cls_out_path, gt_sub)
-        # os.makedirs(rt_out_path, exist_ok=True)
-        os.makedirs(gt_out_path, exist_ok=True)
+        select_factors = list()
+        for p in factor:
+            select_factors.append(random.sample(names, k=max(min(4, len(names)), int(len(names) * 0.05))))
 
-        select_names = random.sample(names, k=max(min(10, len(names)), int(len(names) * 0.25)))
+        for p, select_names in zip(factor, select_factors):
 
-        for name in select_names:
-            assert name[0].find(rt_sub) != -1 and name[1].find(gt_sub) != -1
-            # shutil.copy(os.path.join(root_path, name[0]), os.path.join(cls_out_path, name[0]))
-            shutil.copy(os.path.join(root_path, name[1]), os.path.join(cls_out_path, name[1]))
+            cls_out_path = os.path.join(out_root, str(p), txt_name.split('.')[0])
+            # gt_out_path = os.path.join(cls_out_path, gt_sub)
+            os.makedirs(cls_out_path, exist_ok=True)
 
-        total_nums += len(os.listdir(gt_out_path))
+            for name in select_names:
+                assert name[0].find(rt_sub) != -1 and name[1].find(gt_sub) != -1
+                # shutil.copy(os.path.join(root_path, name[0]), os.path.join(cls_out_path, name[0]))
+                shutil.copy(os.path.join(root_path, name[1]), os.path.join(cls_out_path, name[1].split('/')[-1]))
+
+            total_nums += len(os.listdir(cls_out_path))
     
     print(total_nums)
     return
@@ -1384,6 +1404,174 @@ def split_over_expose_by_gt_jpg():
     return
 
 
+def select_raw_embed_jpg():
+    raw_embed_in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/raw_embed_jpg'
+    gt_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg/gt_8bit_1500p_only_adjust_light'
+    rt_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg/rt_8bit_1500p'
+    raw_embed_out_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.jpg/raw_embed_8bit_1500p'
+    os.makedirs(raw_embed_out_root_path, exist_ok=True)
+
+    raw_embed_jpg_names = list()
+    for sub_dir in os.listdir(raw_embed_in_root_path):
+        if sub_dir.startswith('.'):
+            continue
+        raw_embed_jpg_names.extend([('{}.jpg'.format(name.split('.')[0]), os.path.join(sub_dir, name)) for name in os.listdir(os.path.join(raw_embed_in_root_path, sub_dir)) if not name.startswith('.')])
+
+    over_expose = list()
+    under_expose = list()
+    raw_embed_jpg_names = random.sample(raw_embed_jpg_names, k=int(len(raw_embed_jpg_names) * 0.2))
+    for key, name in tqdm.tqdm(raw_embed_jpg_names):
+        if not os.path.exists(os.path.join(rt_root_path, key)):
+            print('not found {}'.format(os.path.join(rt_root_path, key)))
+            continue
+        gt_img = cv2.imread(os.path.join(gt_root_path, key), cv2.IMREAD_COLOR)
+        rt_img = cv2.imread(os.path.join(rt_root_path, key), cv2.IMREAD_COLOR)
+        raw_img = cv2.imread(os.path.join(raw_embed_in_root_path, name), cv2.IMREAD_COLOR)
+        h, w, c = rt_img.shape
+        oh, ow, _ = raw_img.shape
+        diff = abs(h / w - oh / ow)
+        if diff > 1e-3:
+            print('{}-{} size scale is not match: {},{} - {},{} = {}'.format(name, key, h, w, oh, ow, diff))
+            continue
+        small_raw_img = cv2.resize(raw_img, dsize=(w, h))
+        # gt_light = np.mean(bgr2luma(gt_img))
+        rt_light = np.mean(bgr2luma(rt_img))
+        raw_light = np.mean(bgr2luma(small_raw_img))
+        if rt_light < raw_light:
+            over_expose.append(key)
+        else:
+            under_expose.append(key)
+
+        if random.random() < 0.05:
+            cv2.imwrite(os.path.join(raw_embed_out_root_path, '{}-{}'.format(round(rt_light-raw_light, 2), key)), np.concatenate([rt_img, small_raw_img, gt_img], axis=1))
+
+    print('over expose : {}'.format(len(over_expose)))
+    print('under expose : {}'.format(len(under_expose)))
+    return
+
+
+def show_ps_data():
+    root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    out_path = '/mnt/sdb/data.set/xintu.data/enhance.data/ps.show'
+    ps_over_name = 'rt_16bit_ps_over_540p'
+    ps_under_name = 'rt_16bit_ps_under_540p'
+    gt_name = 'gt_16bit_540p'
+
+    os.makedirs(out_path, exist_ok=True)
+
+    over_level = '5'
+    under_level = '5'
+    ps_over_root_path = os.path.join(root_path, ps_over_name, over_level)
+    ps_under_root_path = os.path.join(root_path, ps_under_name, under_level)
+
+    for sub_dir in os.listdir(ps_over_root_path):
+        ps_over_path = os.path.join(ps_over_root_path, sub_dir)
+        ps_under_path = os.path.join(ps_under_root_path, sub_dir)
+
+        for over_name in os.listdir(ps_over_path):
+            under_name = os.path.join(ps_under_path, over_name)
+            if not os.path.exists(under_name):
+                continue
+            under_img = cv2.imread(under_name, cv2.IMREAD_COLOR)
+            over_img = cv2.imread(os.path.join(ps_over_path, over_name), cv2.IMREAD_COLOR)
+            gt_img = cv2.imread(os.path.join(root_path, gt_name, over_name), cv2.IMREAD_COLOR)
+            cv2.imwrite(os.path.join(out_path, '{}-{}-{}'.format(over_level, under_level, over_name)), np.concatenate([over_img, gt_img, under_img], axis=1))
+
+
+def split_ps_data():
+    in_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540'
+    out_root_path = '/home/shengdewu/data/xt.image.enhancement.540'
+    ps_over_name = 'rt_16bit_ps_over_540p'
+    ps_under_name = 'rt_16bit_ps_under_540p'
+    gt_name = 'gt_16bit_540p'
+
+    def get_ps_names(root_path, ps_path_name):
+        levels = [1, 2, 3, 4, 5]
+        ps_names = list()
+        for level in levels:
+            ps_level_path = os.path.join(root_path, ps_path_name, str(level))
+            if not os.path.exists(ps_level_path):
+                print('the level {} not exists'.format(level))
+                continue
+            for scene in os.listdir(ps_level_path):
+                if scene == '.DS_Store':
+                    cmd = 'rm {}'.format(os.path.join(ps_level_path, scene))
+                    print(cmd)
+                    os.system(cmd)
+                    continue
+                ps_scene_path = os.path.join(ps_level_path, scene)
+                for name in os.listdir(ps_scene_path):
+                    if name == '.DS_Store':
+                        cmd = 'rm {}'.format(os.path.join(ps_scene_path, name))
+                        print(cmd)
+                        os.system(cmd)
+                        continue
+                    ps_names.append((name, os.path.join(ps_path_name, str(level), scene, name)))
+        return ps_names
+
+    def compose_ps_gt(ps_names: list):
+        pair_names = list()
+        gt_path = os.path.join(in_root_path, gt_name)
+        for name, name_path in ps_names:
+            if not os.path.exists(os.path.join(gt_path, name)):
+                print('the {} not exists in {}'.format(name, gt_path))
+                continue
+            pair_names.append((name_path, os.path.join(gt_name, name)))
+        return pair_names
+
+    ps_over_names = get_ps_names(in_root_path, ps_over_name)
+    ps_under_names = get_ps_names(in_root_path, ps_under_name)
+    ps_pair_names = compose_ps_gt(ps_over_names)
+    ps_pair_names.extend(compose_ps_gt(ps_under_names))
+
+    tmp_root_path = '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540.tmp'
+    os.makedirs(os.path.join(tmp_root_path, 'gt_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_16bit_ps_over_540p'), exist_ok=True)
+    os.makedirs(os.path.join(tmp_root_path, 'rt_16bit_ps_under_540p'), exist_ok=True)
+
+    os.makedirs(os.path.join(out_root_path, 'gt_16bit_540p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_16bit_ps_over_540p'), exist_ok=True)
+    os.makedirs(os.path.join(out_root_path, 'rt_16bit_ps_under_540p'), exist_ok=True)
+
+    new_ps_pair_names = list()
+    for name in tqdm.tqdm(ps_pair_names):
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, name[0])))
+        # print('{} -> {}'.format(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1])))
+        arr = name[0].split('/')
+        assert len(arr) == 4 and arr[0] in ['rt_16bit_ps_over_540p', 'rt_16bit_ps_under_540p']
+        new_name_0 = '{}/{}-{}-{}'.format(arr[0], arr[1], arr[2], arr[3])
+        new_ps_pair_names.append((new_name_0, name[1]))
+        if os.path.exists(os.path.join(out_root_path, new_name_0)) and os.path.exists(os.path.join(out_root_path, name[1])):
+            continue
+
+        shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(out_root_path, new_name_0))
+        shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(out_root_path, name[1]))
+        if random.random() <= 0.01:
+            shutil.copy(os.path.join(in_root_path, name[0]), os.path.join(tmp_root_path, new_name_0))
+            shutil.copy(os.path.join(in_root_path, name[1]), os.path.join(tmp_root_path, name[1]))
+
+    random.shuffle(new_ps_pair_names)
+    test_nums = int(0.05 * len(new_ps_pair_names))
+    test_names = new_ps_pair_names[: test_nums]
+    train_names = new_ps_pair_names[test_nums:]
+    train_point = int(0.5 * len(train_names))
+
+    with open(os.path.join(out_root_path, 'ps.test.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in test_names:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'ps.train_input.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[: train_point]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+
+    with open(os.path.join(out_root_path, 'ps.train_label.txt'), mode='w') as f:
+        f.write('input,gt\n')
+        for name in train_names[train_point:]:
+            f.write('{},{}\n'.format(name[0], name[1]))
+    return
+
 if __name__ == '__main__':
     # require_txt = [
     #     'no_aug.train_input.txt',
@@ -1411,8 +1599,11 @@ if __name__ == '__main__':
     # add_under_expose_by_gt()
     # split_over_expose_by_gt()
     # split_only_over_expose_by_gt()
-    split_only_over_under_expose_by_gt()
+    # split_only_over_under_expose_by_gt()
     # add_over_expose_by_gt_jpg()
     # split_over_expose_by_gt_jpg()
+    # select_raw_embed_jpg()
+    # show_ps_data()
+    split_ps_data()
 
 

@@ -36,10 +36,10 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
     cv::Mat img_rgb_normal;
     img_rgb.convertTo(img_rgb_normal, CV_32FC3, 1.0/255.0);
 
-    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), ref_size);
+//    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), ref_size);
 
     cv::Mat in_img;
-    cv::resize(img_rgb_normal, in_img, target_size, 0, 0, cv::INTER_AREA);
+    cv::resize(img_rgb_normal, in_img, cv::Size(ref_size, ref_size), 0, 0, cv::INTER_AREA);
 //    int h_offset = ref_size - target_size.height;
 //    int w_offset = ref_size - target_size.width;
 //    int top = h_offset / 2;
@@ -49,7 +49,7 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
 //    cv::Mat in_img;
 //    cv::copyMakeBorder(in_img_tmp, in_img, top, bottom, left, right, cv::BorderTypes::BORDER_CONSTANT);
 
-    cv::Mat nchw_img = cv::dnn::blobFromImage(in_img, 1.0, in_img.size(), cv::Scalar(), false);
+    cv::Mat nchw_img = cv::dnn::blobFromImage(in_img, 1.0);
     std::cout << "input_img_bgr_normal: "<< img_rgb_normal.rows << "," << img_rgb_normal.cols << "," << img_rgb_normal.channels() << std::endl;
     std::cout << "in_img: " << in_img.rows << "," << in_img.cols << "," << in_img.channels() << std::endl;
     std::cout << "nchw_img: " << nchw_img.rows << "," << nchw_img.cols << "," << nchw_img.channels() << "," << nchw_img.dims << std::endl;
@@ -104,7 +104,7 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
 //    }
 //
 //    std::cout << "start apply lut" << std::endl;
-//
+
 //     cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
      cv::Mat img_enhance_normal = Lut::trilinear_forward(f_data, img_rgb_normal);
 
