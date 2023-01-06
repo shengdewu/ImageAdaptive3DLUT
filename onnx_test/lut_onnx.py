@@ -131,7 +131,7 @@ def to_onnx(cfg, onnx_name, input_size, device='cpu', log_name=''):
     lut_model = LutModel(cfg)
     load_state_dict(lut_model, model_state_dict, log_name=log_name)
 
-    torch.save(get_state_dict(lut_model), './lut.pth')
+    torch.save(get_state_dict(lut_model), onnx_name.replace('.onnx', '.pth'))
 
     torch.onnx.export(lut_model,
                       torch.zeros(size=input_size, device=device, dtype=torch.float32),

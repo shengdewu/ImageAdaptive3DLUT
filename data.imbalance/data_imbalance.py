@@ -1869,13 +1869,13 @@ def split_raw_and_rt_data():
 
 
 if __name__ == '__main__':
-    # require_txt = [
-    #     'no_aug.train_input.txt',
-    #     'no_aug.train_label.txt',
-    #     'no_aug.test.txt'
-    # ]
-    # gray_statistics = GrayDataSet(require_txt, '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540')
-    # gray_statistics()
+    require_txt = [
+        'no_aug.train_input.txt',
+        'no_aug.train_label.txt',
+        'no_aug.test.txt'
+    ]
+    gray_statistics = GrayDataSet(require_txt, '/mnt/sdb/data.set/xintu.data/enhance.data/xt.image.enhancement.540')
+    gray_statistics()
 
     # select_equal_brightness()
     #
@@ -1890,20 +1890,20 @@ if __name__ == '__main__':
     # cp()
     # select_img()
     # class_img()
-    select_class_img()
-    # add_over_expose_by_gt()
-    # add_under_expose_by_gt()
+    add_over_expose_by_gt()
+    add_under_expose_by_gt()
     # split_over_expose_by_gt()
     # split_only_over_expose_by_gt()
-    # split_only_over_under_expose_by_gt()
+    split_only_over_under_expose_by_gt()
     # add_over_expose_by_gt_jpg()
     # split_over_expose_by_gt_jpg()
-    select_raw_embed_jpg()
+    # select_raw_embed_jpg()
     # show_raw_embed_jpg()
     # show_ps_data()
+    select_class_img()
     split_ps_data()
     # split_raw_data()
-    split_ps_raw_data()
+    # split_ps_raw_data()
     # split_raw_and_rt_data()
 
 

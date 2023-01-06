@@ -1,5 +1,5 @@
-# stable config
-1. train
+# 训练配置
+### 基础配置
 ```python
 DATALOADER:
   DATASET: ImageDataSetXinTu
@@ -60,7 +60,7 @@ OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16
 OUTPUT_LOG_NAME: image.lut
 SOLVER:
   BASE_LR: 0.0002
-  WARMUP_ITERS: 100
+  WARMUP_ITERS: 100  # or  0
   GAMMA: 0.1
   MAX_ITER: 200000
   STEPS: (15000, 19000)
@@ -86,7 +86,11 @@ SOLVER:
     B2: 0.999
 ```
 
-2. pretrain
+### 微调（此过程的数据增强在 data.imbalance/data_imbalance.py 中)
+1. 自定义过曝欠曝数据集
+* add_over_expose_by_gt()
+* add_under_expose_by_gt()
+* split_only_over_under_expose_by_gt()
 ```python
 DATALOADER:
   DATASET: ImageDataSetXinTu
@@ -169,4 +173,15 @@ SOLVER:
   ADAM:
     B1: 0.9
     B2: 0.999
+```
+
+2. 通过PS制作过曝欠曝数据集
+* select_class_img()
+* split_ps_data()
+```python
+
+  XT_TEST_TXT: ps.test.txt
+  XT_TRAIN_INPUT_TXT: ps.train_input.txt
+  XT_TRAIN_LABEL_TXT: ps.train_label.txt
+
 ```
