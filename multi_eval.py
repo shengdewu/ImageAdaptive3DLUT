@@ -67,7 +67,7 @@ def inference(onnx_path='', compare_in=None, compare_out=None):
 
     print('enhance {} by resize/factor {}/{}'.format(cfg.DATALOADER.DATA_PATH, rough_size, down_factor))
 
-    session.loop(cfg, skip=False, is_cat=True, rough_size=rough_size, down_factor=down_factor, is_padding=False)
+    session.loop(cfg, skip=False, is_cat=False, rough_size=rough_size, down_factor=down_factor, is_padding=False)
 
     if compare_in is not None:
         compare = compare_tool.CompareRow()
@@ -76,22 +76,22 @@ def inference(onnx_path='', compare_in=None, compare_out=None):
 
 
 if __name__ == '__main__':
-    # inference(onnx_path = '/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/onnx_test/lut_over.onnx')
+    inference("lut.onnx")
 
-    rhd = open('/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/dir/over.txt', mode='r')
+    rhd = open('/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/dir/all.txt', mode='r')
     dir_names = [line.strip('\n').split('#') for line in rhd.readlines()]
     rhd.close()
 
     compare_paths = [
-        '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16',
+        # '/mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16',
         '/mnt/sda1/valid.output/enhance.test/lut.pretrain',
-        # '/mnt/sda1/valid.output/enhance.test/lut.pretrain.ps',
+        '/mnt/sda1/valid.output/enhance.test/lut.pretrain.raw.embed_ps',
         '/mnt/sda1/valid.output/enhance.test/lut.pretrain.ps.2'
     ]
 
     # compare = compare_tool.CompareRow()
     # compare.compare(base_path='', compare_paths=compare_paths, out_path='/mnt/sda1/valid.output/enhance.test/compare.lut.over.pre', skip=True, special_name=None)
     #
-    onnx_path = '/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/onnx_test/lut_over.onnx'
-    compare_out = '/mnt/sda1/valid.output/enhance.test/compare.lut.pretrain'
-    batch_inference(dir_names, '', compare_paths, compare_out)
+    onnx_path = '/mnt/sda1/workspace/enhance/ImageAdaptive3DLUT/onnx_test/img.lut12.mobile.dim16.onnx'
+    compare_out = '/mnt/sda1/valid.output/enhance.test/compare.lut.pretrain.raw.embed.ps'
+    batch_inference(dir_names, onnx_path, compare_paths, compare_out)

@@ -311,19 +311,19 @@ class OnnxSession:
 
             lut = torch.from_numpy(outputs[0]).to('cuda')
 
-            # save_lut = np.zeros((64, 64, 3))
-            # for x_cell in range(4):
-            #     for y_cell in range(4):
-            #         for g in range(16):
-            #             for r in range(16):
-            #                 b = x_cell + y_cell * 4
-            #                 x = r + x_cell * 16
-            #                 y = g + y_cell * 16
-            #                 save_lut[y, x, 2] = lut[0, b, g, r]
-            #                 save_lut[y, x, 1] = lut[1, b, g, r]
-            #                 save_lut[y, x, 0] = lut[2, b, g, r]
-            #
-            # cv2.imwrite(os.path.join(out_path, '{}.jpg'.format(img_name.replace('jpg', 'lut'))), (save_lut*255).astype(np.uint8))
+            save_lut = np.zeros((64, 64, 3))
+            for x_cell in range(4):
+                for y_cell in range(4):
+                    for g in range(16):
+                        for r in range(16):
+                            b = x_cell + y_cell * 4
+                            x = r + x_cell * 16
+                            y = g + y_cell * 16
+                            save_lut[y, x, 2] = lut[0, b, g, r]
+                            save_lut[y, x, 1] = lut[1, b, g, r]
+                            save_lut[y, x, 0] = lut[2, b, g, r]
+
+            cv2.imwrite(os.path.join(out_path, '{}.jpg'.format(img_name.replace('jpg', 'lut'))), (save_lut*255).astype(np.uint8))
 
             real_a = torch.from_numpy(normal_rgb.transpose((2, 0, 1))).unsqueeze(0).to('cuda')
             _, enhance_img = trilinear(lut, real_a)

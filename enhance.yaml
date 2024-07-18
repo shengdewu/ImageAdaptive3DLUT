@@ -1,15 +1,15 @@
 SOLVER:
-  BASE_LR: 0.0002
-  WARMUP_ITERS: 0
+  BASE_LR: 0.00001
+  WARMUP_ITERS: 100
   GAMMA: 0.1
-  MAX_ITER: 200000
-  STEPS: (15000, 19000)
+  MAX_ITER: 100000
+  STEPS: (40000, 80000)
   CHECKPOINT_PERIOD: 10000
   MAX_KEEP: 10
-  IMS_PER_BATCH: 6
-  TEST_PER_BATCH: 8
+  IMS_PER_BATCH: 4
+  TEST_PER_BATCH: 1
   LAMBDA_GP: 10
-  LAMBDA_PIXEL: 6  # for AdaptiveUnPairedModel 1000
+  LAMBDA_PIXEL: 100  # for AdaptiveUnPairedModel 1000
 #  """
 #  1.the LAMBDA_SMOOTH should be small since a heavy smoothness penalty will result in flat 3D LUTs while limited transformation flexibility
 #  2. the LAMBDA_MONOTONICITY , it can be relatively stronger, can help to update the parameters that may be not be activated by input data
@@ -26,12 +26,12 @@ SOLVER:
     B2: 0.999
 
 MODEL:
-  WEIGHTS: ''
-  VGG:
-    VGG_PATH: /mnt/sdb/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
-    VGG_LAYER: 14
+  # WEIGHTS: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16/AdaptivePerceptualPairedModel_final.pth
+  # VGG:
+  #   VGG_PATH: /mnt/sdb/pretrain.model/vgg.model/pytorch/vgg16-397923af.pth
+  #   VGG_LAYER: 14
   DEVICE: cuda
-  ARCH: AdaptivePerceptualPairedModel
+  ARCH: AdaptivePairedModel
   LUT:
     SUPPLEMENT_NUMS: 11
     DIMS: 16
@@ -39,19 +39,19 @@ MODEL:
   CLASSIFIER:
 #    PRETRAINED_PATH: /mnt/sda2/pretrain.model/resnet/resnet50-0676ba61.pth
     ARCH: MobileNet
-#    ROUGH_SIZE: 512
+#    ROUGH_SIZE: 540
 #    BLUR_SIZE: 3
 #    RESNET_ARCH: resnet50
 #    RESNET_NORMAL: InstanceNorm2d
 
 DATALOADER:
-  NUM_WORKERS: 10
-  DATA_PATH: /home/shengdewu/data/xt.image.enhancement.540
+  NUM_WORKERS: 8
+  DATA_PATH: /mnt/sdb/enhance.data/xt.image.enhancement.540
   DATASET: ImageDataSetXinTu
   XT_TRAIN_INPUT_TXT: "no_aug.train_input.txt"
   XT_TRAIN_LABEL_TXT: "no_aug.train_label.txt"
   XT_TEST_TXT: "no_aug.test.txt"
-  XT_TEST_MAX_NUMS: 30
+  XT_TEST_MAX_NUMS: 100
 
 INPUT:
   INPUT_OVER_EXPOSURE:
@@ -60,33 +60,33 @@ INPUT:
     F_MIN: -0.4
     F_VALUE: 1.5
   COLOR_JITTER:
-    PROB: 0.0
+    PROB: 0.3
     BRIGHTNESS:
-      ENABLE: true
-      MIN: 0.7
-      MAX: 1.15
+      ENABLE: false
+      MIN: 0.8
+      MAX: 1.1
     SATURATION:
       ENABLE: false
       MIN: 0.7
       MAX: 1.1
     CONTRAST:
-      ENABLE: false
-      MIN: 0.8
-      MAX: 1.1
+      ENABLE: true
+      MIN: 0.7
+      MAX: 0.9
     ADAPTIVE_LIGHT:
       ENABLED: false
       MAX: 1.2
       MIN: 0.8
-  TRAINING_COLOR_JITTER:
-    BRIGHTNESS:
-      MAX: 1.2
-      THRESHOLD: 0.3
-    DARKNESS:
-      MIN: 0.85
-      THRESHOLD: 0.7
-    CONTRAST: 1.1
-    ENABLE: false
-    SATURATION: 1.0
+#  TRAINING_COLOR_JITTER:
+#    BRIGHTNESS:
+#      MAX: 1.2
+#      THRESHOLD: 0.3
+#    DARKNESS:
+#      MIN: 0.85
+#      THRESHOLD: 0.7
+#    CONTRAST: 1.1
+#    ENABLE: false
+#    SATURATION: 1.0
 
 OUTPUT_LOG_NAME: "image.lut"
-OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/test
+OUTPUT_DIR: /mnt/sda1/train.output/enhance.output/lut.base-t

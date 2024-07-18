@@ -1,14 +1,14 @@
 MODEL:
-  ARCH: AdaptivePerceptualPairedModel
+  ARCH: AdaptivePairedModel
   LUT:
     DIMS: 16
     SUPPLEMENT_NUMS: 11
     ZERO_LUT: true
-  WEIGHTS: /mnt/sda1/train.output/enhance.output/img.lut12.mobile.dim16/AdaptivePerceptualPairedModel_final.pth
-  VGG:
-    VGG_PATH: ./checkpoint/vgg16-397923af.pth
-    VGG_LAYER: 14
-  DEVICE: cpu
+  WEIGHTS: /mnt/sda1/train.output/enhance.output/lut.pretrain/AdaptivePairedModel_final.pth
+  # VGG:
+  #   VGG_PATH: ./checkpoint/vgg16-397923af.pth
+  #   VGG_LAYER: 14
+  DEVICE: cuda
   CLASSIFIER:
     ARCH: MobileNet
     DOWN_FACTOR: 8
@@ -16,12 +16,12 @@ MODEL:
 
 DATALOADER:
   NUM_WORKERS: 1
-  DATA_PATH: ./test.img #/mnt/sdb/error.collection/skin/duoren
+  DATA_PATH: /mnt/sda2/测试图片/美状测试  # /mnt/sdb/data.set/xintu.data/转档测评/20210510转档评测_tif_3000x2000 # /home/shengdewu/data/xt.image.enhancement.540/rt_16bit_over_540p
   DATASET: ImageDatasetTest
-  XT_TEST_MAX_NUMS: -1
+  XT_TEST_MAX_NUMS: 100
 
 OUTPUT_LOG_NAME: "image.lut"
-OUTPUT_DIR: ./test.out
+OUTPUT_DIR: /mnt/sda1/valid.output/enhance.test/test # /mnt/sda1/valid.output/enhance.test/img.lut12.mobile.dim16
 
 SOLVER:
   ADAM:

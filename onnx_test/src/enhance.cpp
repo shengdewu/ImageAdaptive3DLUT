@@ -33,13 +33,36 @@ ImgEnhance::~ImgEnhance(){
 
 cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut_cache, bool enable_post){
 
-    cv::Mat img_rgb_normal;
-    img_rgb.convertTo(img_rgb_normal, CV_32FC3, 1.0/255.0);
-
 //    cv::Size target_size = scale_longe_edge(cv::Size(img_rgb_normal.cols, img_rgb_normal.rows), ref_size);
 
+    int width = img_rgb.cols;
+    int height = img_rgb.rows;
+    int face_size = std::max(height, width);
+    int pad_left = 0;
+    int pad_right = 0;
+    int pad_top = 0;
+    int pad_bottom = 0;
+    if (width != face_size){
+        int offset = face_size - width;
+        pad_left = offset / 2;
+        pad_right = offset - pad_left;
+    }
+    else if(height != face_size){
+        int offset = face_size - height;
+        pad_top = offset / 2;
+        pad_bottom = offset - pad_top;
+    }
+
     cv::Mat in_img;
-    cv::resize(img_rgb_normal, in_img, cv::Size(ref_size, ref_size), 0, 0, cv::INTER_AREA);
+    cv::copyMakeBorder(img_rgb, in_img, pad_top, pad_bottom, pad_left, pad_right, cv::BORDER_CONSTANT, 0);
+
+    cv::resize(img_rgb, in_img, cv::Size(512, 512), 0, 0, cv::INTER_AREA);
+
+    in_img.convertTo(in_img, CV_32FC3, 1.0/255.0);
+    cv::Mat mean = cv::Mat(in_img.size(), in_img.type(), cv::Scalar(0.485f, 0.456f, 0.406f));
+    cv::Mat std = cv::Mat(in_img.size(), in_img.type(), cv::Scalar(1.f/0.229f, 1.f/0.224f, 1.f/0.225f));
+    in_img = (in_img - mean).mul(std);
+
 //    int h_offset = ref_size - target_size.height;
 //    int w_offset = ref_size - target_size.width;
 //    int top = h_offset / 2;
@@ -50,7 +73,7 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
 //    cv::copyMakeBorder(in_img_tmp, in_img, top, bottom, left, right, cv::BorderTypes::BORDER_CONSTANT);
 
     cv::Mat nchw_img = cv::dnn::blobFromImage(in_img, 1.0);
-    std::cout << "input_img_bgr_normal: "<< img_rgb_normal.rows << "," << img_rgb_normal.cols << "," << img_rgb_normal.channels() << std::endl;
+    std::cout << "input_img_bgr_normal: "<< in_img.rows << "," << in_img.cols << "," << in_img.channels() << std::endl;
     std::cout << "in_img: " << in_img.rows << "," << in_img.cols << "," << in_img.channels() << std::endl;
     std::cout << "nchw_img: " << nchw_img.rows << "," << nchw_img.cols << "," << nchw_img.channels() << "," << nchw_img.dims << std::endl;
 
@@ -62,7 +85,7 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
     int input_height = input_tensor->height();
     int input_width = input_tensor->width();
 
-    std::vector<int> target_dims {1,  in_img.channels(), in_img.rows, in_img.cols};
+    std::vector<int> target_dims {1,  3, in_img.rows, in_img.cols};
     std::vector<int> input_dims{input_batch, input_channel, input_height, input_width};
     if(input_dims != target_dims){
         _mnn_interpreter->resizeTensor(input_tensor, target_dims);
@@ -80,14 +103,14 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
     _mnn_interpreter->runSession(mnn_session);
     auto output_tensors = _mnn_interpreter->getSessionOutputAll(mnn_session);
 
-    MNN::Tensor* tensor = output_tensors.at("out_lut");
+    MNN::Tensor* tensor = output_tensors.at(_lut_name);
     MNN::Tensor host_tensor(tensor, tensor->getDimensionType());
     tensor->copyToHostTensor(&host_tensor);
 
     auto output_shape = host_tensor.shape();
-    assert(output_shape[1] == _lut_dim);
-    const float *f_data = host_tensor.host<float>();
-
+//    assert(output_shape[1] == 512);
+    void *f_data = host_tensor.host<int>();
+    cv::Mat face_mask = cv::Mat(512, 512, CV_8UC1, f_data, 512);
 //    int lut_size = 64; // 512 for lut dim = 64, 64 for lut dim = 16
 //    cv::Mat lut_mat = cv::Mat::zeros(cv::Size(lut_size, lut_size), CV_32FC3);
 //
@@ -106,17 +129,17 @@ cv::Mat ImgEnhance::run(const cv::Mat &img_rgb, size_t ref_size, std::string lut
 //    std::cout << "start apply lut" << std::endl;
 
 //     cv::Mat img_enhance_normal = Lut::trilinear(img_rgb_normal, lut_mat);
-     cv::Mat img_enhance_normal = Lut::trilinear_forward(f_data, img_rgb_normal);
-
-    if(enable_post){
-        std::cout << "post lut" << std::endl;
-        post_process(img_rgb_normal, img_enhance_normal);
-    }
-
-    cv::Mat img_enhance = img_enhance_normal * 255;
-    img_enhance.convertTo(img_enhance, CV_8UC3);
-
-    return img_enhance;
+//     cv::Mat img_enhance_normal = Lut::trilinear_forward(f_data, img_rgb_normal);
+//
+//    if(enable_post){
+//        std::cout << "post lut" << std::endl;
+//        post_process(img_rgb_normal, img_enhance_normal);
+//    }
+//
+//    cv::Mat img_enhance = img_enhance_normal * 255;
+//    img_enhance.convertTo(img_enhance, CV_8UC3);
+    cv::imwrite("mask.png", face_mask);
+    return face_mask;
 
 }
 
@@ -186,10 +209,10 @@ void ImgEnhance::create_mnn_env(){
     assert(tmp_output_map.size() == 1);
     _lut_name = tmp_output_map.begin()->first;
     auto output_shape = tmp_output_map.begin()->second->shape();
-    _lut_dim = output_shape[1];
-    _lut_channel = output_shape[0];
-    assert (_lut_dim == 64 || _lut_dim == 16);
-    assert (_lut_channel == 3);
+//    _lut_dim = output_shape[1];
+//    _lut_channel = output_shape[0];
+//    assert (_lut_dim == 64 || _lut_dim == 16);
+//    assert (_lut_channel == 3);
     std::cout << "lut name: "<< _lut_name << ", output: " << output_shape << ", dim=" << _lut_dim << ",channel="<<_lut_channel << std::endl;
 }
 
